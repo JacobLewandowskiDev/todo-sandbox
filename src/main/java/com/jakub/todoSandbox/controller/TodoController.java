@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
+@RequestMapping("/todos")
 public class TodoController {
 
     private final TodoService todoService;
@@ -21,7 +21,7 @@ public class TodoController {
     }
 
     @GetMapping("/")
-    public ModelAndView getCreateTodoView() {
+    public String getCreateTodoView() {
         return todoService.isListEmpty();
     }
 

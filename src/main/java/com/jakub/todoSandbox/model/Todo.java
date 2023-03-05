@@ -1,7 +1,5 @@
 package com.jakub.todoSandbox.model;
 
-
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
@@ -11,7 +9,6 @@ public class Todo {
     private String name;
     private String description;
     private Priority priority;
-    @JsonProperty("nested_steps")
     private List<Step> nestedSteps;
 
 

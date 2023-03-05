@@ -14,20 +14,21 @@ import java.util.stream.Collectors;
 @Service
 public class TodoService {
 
-    // Temporary Map for todos - for testing purposes TODO implement postgress database for todos and steps instead of map
+    // Temporary Map for todos - for testing purposes TODO implement Postgres database for todos and steps instead of map
     private Map<Long, Todo> todoList;
+    private static final int MAX_NUM_STEPS = 10;
+
 
     public TodoService(Map<Long, Todo> todoList) {
         this.todoList = todoList;
     }
 
-    public ModelAndView isListEmpty() {
+    public String isListEmpty() {
         if(todoList.isEmpty()) {
-            System.out.println("List is empty, returned to index.html");
-            return new ModelAndView("index.html");
+            return "List is empty, returned to index.html";
         } else {
-            System.out.println("List is not empty, forwarding to todo-list");
-            return new ModelAndView("/todo-list");
+            System.out.println("");
+            return "List is not empty, forwarding to todo-list";
         }
     }
 
@@ -81,7 +82,7 @@ public class TodoService {
 
     public void createStep(Long todoId, Step createdStep) {
         Todo exists = todoList.get(todoId);
-        if (exists != null && (exists.getNestedSteps().size() < 10)) {
+        if (exists != null && (exists.getNestedSteps().size() < MAX_NUM_STEPS)) {
             System.out.println("Size of step array before adding new: " + exists.getNestedSteps().size());
             createdStep.setId((long) (exists.getNestedSteps().size() + 1));
             exists.getNestedSteps().add(createdStep);
