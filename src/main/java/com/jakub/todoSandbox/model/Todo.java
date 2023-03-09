@@ -9,15 +9,15 @@ public class Todo {
     private String name;
     private String description;
     private Priority priority;
-    private List<Step> nestedSteps;
+    private List<Step> steps;
 
 
-    public Todo(Long id, String name, String description, Priority priority, List<Step> nestedSteps) {
+    public Todo(Long id, String name, String description, Priority priority, List<Step> steps) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.priority = priority;
-        this.nestedSteps = nestedSteps;
+        this.steps = steps;
     }
 
     public Long getId() {
@@ -52,12 +52,12 @@ public class Todo {
         this.priority = priority;
     }
 
-    public List<Step> getNestedSteps() {
-        return nestedSteps;
+    public List<Step> getsteps() {
+        return steps;
     }
 
-    public void setNestedSteps(List<Step> nestedSteps) {
-        this.nestedSteps = nestedSteps;
+    public void setsteps(List<Step> steps) {
+        this.steps = steps;
     }
 
 }

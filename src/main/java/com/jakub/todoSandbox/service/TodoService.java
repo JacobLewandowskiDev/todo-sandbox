@@ -3,7 +3,6 @@ package com.jakub.todoSandbox.service;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.ModelAndView;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,35 +22,30 @@ public class TodoService {
         this.todoList = todoList;
     }
 
-    public String isListEmpty() {
-        if(todoList.isEmpty()) {
-            return "List is empty, returned to index.html";
+    public Todo createTodo(Todo todo) {
+        if (validateNameAndDesc(todo.getName(), todo.getDescription())) {
+            todo.setId(todoList.size() + 1L);
+            todoList.put(todo.getId(), todo);
+            System.out.println(
+                    "New todo was created: \n name: " + todo.getName()
+                            + "\n description: " + todo.getDescription()
+                            + "\n priority: " + todo.getPriority()
+                            + "\n steps: \n" + todo.getsteps().get(0).getName());
+            return todo;
         } else {
-            System.out.println("");
-            return "List is not empty, forwarding to todo-list";
+            return null;
         }
-    }
-
-    public void createTodo(Todo todo) {
-        todo.setId(todoList.size() + 1L);
-        todoList.put(todo.getId(),todo);
-        System.out.println(validateNameAndDesc(todo.getName(), todo.getDescription()));
-        System.out.println(
-                "New todo was created: \n name: " + todo.getName()
-                + "\n description: " + todo.getDescription()
-                + "\n priority: " + todo.getPriority()
-                + "\n steps: \n" + todo.getNestedSteps().get(0).getName());
     }
 
     // Update only the main to-do, not its steps
     public void updateTodo(Long id, Todo todo) {
         Todo exists = todoList.get(id);
-        if(exists != null) {
+        if (exists != null) {
             exists.setName(todo.getName());
             exists.setDescription(todo.getDescription());
             exists.setPriority(todo.getPriority());
             todoList.put(id, exists);
-            System.out.println("Todo using id: {" + id +"} has been updated.");
+            System.out.println("Todo using id: {" + id + "} has been updated.");
         } else {
             System.out.println("No todo exists under this id.");
         }
@@ -68,7 +62,7 @@ public class TodoService {
 
     public List<Todo> getTodoList() {
         List<Todo> todoMapToList = new ArrayList<>(todoList.values());
-      return sortByPriority(todoMapToList);
+        return sortByPriority(todoMapToList);
     }
 
     public Todo getTodoById(Long todoId) {
@@ -82,11 +76,11 @@ public class TodoService {
 
     public void createStep(Long todoId, Step createdStep) {
         Todo exists = todoList.get(todoId);
-        if (exists != null && (exists.getNestedSteps().size() < MAX_NUM_STEPS)) {
-            System.out.println("Size of step array before adding new: " + exists.getNestedSteps().size());
-            createdStep.setId((long) (exists.getNestedSteps().size() + 1));
-            exists.getNestedSteps().add(createdStep);
-            System.out.println("Size of step array after adding new: " + exists.getNestedSteps().size());
+        if (exists != null && (exists.getsteps().size() < MAX_NUM_STEPS)) {
+            System.out.println("Size of step array before adding new: " + exists.getsteps().size());
+            createdStep.setId((long) (exists.getsteps().size() + 1));
+            exists.getsteps().add(createdStep);
+            System.out.println("Size of step array after adding new: " + exists.getsteps().size());
         } else {
             System.out.println("Exceeded maximum number of steps of 10 for todo, or todo does not exist.");
         }
@@ -94,13 +88,13 @@ public class TodoService {
 
     public void deleteStep(Long todoId, int stepId) {
         Todo exists = todoList.get(todoId);
-        if(exists != null && stepId >= 0) {
-            for(Step step : exists.getNestedSteps()) {
+        if (exists != null && stepId >= 0) {
+            for (Step step : exists.getsteps()) {
                 if (step.getId() == stepId) {
-                    System.out.println("Size of step array before removing step: " + exists.getNestedSteps().size());
-                    exists.getNestedSteps().remove(step);
+                    System.out.println("Size of step array before removing step: " + exists.getsteps().size());
+                    exists.getsteps().remove(step);
                     System.out.println("Step with id:" + stepId + " was removed.");
-                    System.out.println("Size of step array after removing step: " + exists.getNestedSteps().size());
+                    System.out.println("Size of step array after removing step: " + exists.getsteps().size());
                     break;
                 }
             }
@@ -113,7 +107,7 @@ public class TodoService {
     public void updateStep(Long todoId, int oldStepId, Step updatedStep) {
         Todo exists = todoList.get(todoId);
         if (exists != null && oldStepId >= 0) {
-            for (Step step : exists.getNestedSteps()) {
+            for (Step step : exists.getsteps()) {
                 if (step.getId() == oldStepId) {
                     step.setName(updatedStep.getName());
                     step.setDescription(updatedStep.getDescription());
@@ -127,21 +121,21 @@ public class TodoService {
     }
 
     private boolean validateNameAndDesc(String name, String description) {
-        if(!name.isEmpty() && !name.trim().isEmpty() && name.length() <= 100 && description.length() < 3000) {
+        if (!name.isEmpty() && !name.trim().isEmpty() && name.length() <= 100 && description.length() < 3000) {
             boolean hasAlpha = name.matches("^.*[^a-zA-Z0-9 ].*$");
-            if(!hasAlpha) {
+            if (!hasAlpha) {
                 System.out.println("Name only has alphanumeric");
                 return true;
             }
-        }else
+        } else
             System.out.println("Has non alphanumeric symbol or name is null");
         return false;
     }
 
     private List<Todo> sortByPriority(List<Todo> todos) {
-        Comparator<Todo> priorotyComparator = Comparator.comparing(Todo::getPriority);
+        Comparator<Todo> priorityComparator = Comparator.comparing(Todo::getPriority);
         return todos.stream()
-                .sorted(priorotyComparator)
+                .sorted(priorityComparator)
                 .collect(Collectors.toList());
     }
 }
