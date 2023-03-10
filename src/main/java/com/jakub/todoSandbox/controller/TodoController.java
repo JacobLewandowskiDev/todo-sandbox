@@ -47,17 +47,18 @@ public class TodoController {
 
     //Step mappings
     @PostMapping("/{id}/steps")
-    public void createStep(@PathVariable("id") Long id, @RequestBody Step createdStep) {
-        todoService.createStep(id, createdStep);
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createStep(@PathVariable("id") Long id, @RequestBody List<Step> createdSteps) {
+        todoService.createStep(id, createdSteps);
     }
 
     @DeleteMapping("/{id}/steps")
-    public void deleteStep(@PathVariable("id") Long id, @RequestParam("step_id") int step_id) {
-        todoService.deleteStep(id, step_id);
+    public void deleteStep(@PathVariable("id") Long id, @RequestParam("step_ids") List<Long> step_ids) {
+        todoService.deleteStep(id, step_ids);
     }
 
-    @PutMapping("/{id}/steps")
-    public void updateStep(@PathVariable("id") Long id, @RequestParam("step_id") int step_id, @RequestBody Step updatedStep) {
+    @PutMapping("/{id}/steps/{step_id}")
+    public void updateStep(@PathVariable("id") Long id, @PathVariable("step_id") int step_id, @RequestBody Step updatedStep) {
         todoService.updateStep(id, step_id, updatedStep);
     }
 

@@ -74,31 +74,27 @@ public class TodoService {
         return null;
     }
 
-    public void createStep(Long todoId, Step createdStep) {
+    public void createStep(Long todoId, List<Step> createdSteps) {
         Todo exists = todoList.get(todoId);
         if (exists != null && (exists.getsteps().size() < MAX_NUM_STEPS)) {
             System.out.println("Size of step array before adding new: " + exists.getsteps().size());
-            createdStep.setId((long) (exists.getsteps().size() + 1));
-            exists.getsteps().add(createdStep);
+            for (Step step : createdSteps) {
+                step.setId((long) (exists.getsteps().size() + 1));
+                exists.getsteps().add(step);
+            }
             System.out.println("Size of step array after adding new: " + exists.getsteps().size());
         } else {
             System.out.println("Exceeded maximum number of steps of 10 for todo, or todo does not exist.");
         }
     }
-
-    public void deleteStep(Long todoId, int stepId) {
+//TODO Fix the deleteStep method to actually delete a list of parsed step id's
+    public void deleteStep(Long todoId, List<Long> stepIds) {
         Todo exists = todoList.get(todoId);
-        if (exists != null && stepId >= 0) {
-            for (Step step : exists.getsteps()) {
-                if (step.getId() == stepId) {
-                    System.out.println("Size of step array before removing step: " + exists.getsteps().size());
-                    exists.getsteps().remove(step);
-                    System.out.println("Step with id:" + stepId + " was removed.");
-                    System.out.println("Size of step array after removing step: " + exists.getsteps().size());
-                    break;
-                }
-            }
-
+        if (exists != null && stepIds.size() > 0 && !stepIds.contains(0)) {
+            System.out.println("Size of step array before removing step: " + exists.getsteps().size());
+            exists.getsteps().remove(stepIds);
+            System.out.println("Step with id:" + stepIds + " was removed.");
+            System.out.println("Size of step array after removing step: " + exists.getsteps().size());
         } else {
             System.out.println("No such todo with this id exists.");
         }
