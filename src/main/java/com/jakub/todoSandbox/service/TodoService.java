@@ -4,10 +4,7 @@ import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -76,24 +73,34 @@ public class TodoService {
 
     public void createStep(Long todoId, List<Step> createdSteps) {
         Todo exists = todoList.get(todoId);
-        if (exists != null && (exists.getsteps().size() < MAX_NUM_STEPS)) {
+        if (exists != null) {
             System.out.println("Size of step array before adding new: " + exists.getsteps().size());
             for (Step step : createdSteps) {
-                step.setId((long) (exists.getsteps().size() + 1));
-                exists.getsteps().add(step);
+                if (exists.getsteps().size() < MAX_NUM_STEPS) {
+                    step.setId(exists.getsteps().size() + 1L);
+                    exists.getsteps().add(step);
+                } else {
+                    break;
+                }
             }
             System.out.println("Size of step array after adding new: " + exists.getsteps().size());
         } else {
             System.out.println("Exceeded maximum number of steps of 10 for todo, or todo does not exist.");
         }
     }
-//TODO Fix the deleteStep method to actually delete a list of parsed step id's
+
     public void deleteStep(Long todoId, List<Long> stepIds) {
         Todo exists = todoList.get(todoId);
         if (exists != null && stepIds.size() > 0 && !stepIds.contains(0)) {
             System.out.println("Size of step array before removing step: " + exists.getsteps().size());
-            exists.getsteps().remove(stepIds);
-            System.out.println("Step with id:" + stepIds + " was removed.");
+            Iterator<Step> iterator = exists.getsteps().iterator();
+            while (iterator.hasNext()) {
+                Step step = iterator.next();
+                if (stepIds.contains(step.getId())) {
+                    iterator.remove();
+                    System.out.println("Step with id:" + step.getId() + " was removed.");
+                }
+            }
             System.out.println("Size of step array after removing step: " + exists.getsteps().size());
         } else {
             System.out.println("No such todo with this id exists.");
