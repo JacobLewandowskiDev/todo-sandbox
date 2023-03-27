@@ -2,6 +2,7 @@ package com.jakub.todoSandbox.service;
 
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
+import com.jakub.todoSandbox.repository.TodoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -12,22 +13,24 @@ public class TodoService {
 
     // Temporary Map for todos - for testing purposes TODO implement Postgres database for todos and steps instead of map
     private Map<Long, Todo> todoList;
+    private final TodoRepository todoRepository;
     private static final int MAX_NUM_STEPS = 10;
 
 
-    public TodoService(Map<Long, Todo> todoList) {
+    public TodoService(Map<Long, Todo> todoList, TodoRepository todoRepository) {
         this.todoList = todoList;
+        this.todoRepository = todoRepository;
     }
 
     public Todo createTodo(Todo todo) {
-        if (validateNameAndDesc(todo.getName(), todo.getDescription())) {
+        if (validateNameAndDesc(todo.name(), todo.description())) {
             todo.setId(todoList.size() + 1L);
             todoList.put(todo.getId(), todo);
             System.out.println(
-                    "New todo was created: \n name: " + todo.getName()
-                            + "\n description: " + todo.getDescription()
-                            + "\n priority: " + todo.getPriority()
-                            + "\n steps: \n" + todo.getsteps().get(0).getName());
+                    "New todo was created: \n name: " + todo.name()
+                            + "\n description: " + todo.description()
+                            + "\n priority: " + todo.priority()
+                            + "\n steps: \n" + todo.steps().get(0).name());
             return todo;
         } else {
             return null;
@@ -36,11 +39,11 @@ public class TodoService {
 
     // Update only the main to-do, not its steps
     public void updateTodo(Long id, Todo todo) {
-        Todo exists = todoList.get(id);
+        var exists = todoList.get(id);
         if (exists != null) {
-            exists.setName(todo.getName());
-            exists.setDescription(todo.getDescription());
-            exists.setPriority(todo.getPriority());
+            exists.setName(todo.name());
+            exists.setDescription(todo.description());
+            exists.setPriority(todo.priority());
             todoList.put(id, exists);
             System.out.println("Todo using id: {" + id + "} has been updated.");
         } else {
@@ -64,7 +67,7 @@ public class TodoService {
 
     public Todo getTodoById(Long todoId) {
         for (Todo todo : todoList.values()) {
-            if (todo.getId().equals(todoId)) {
+            if (todo.id().equals(todoId)) {
                 return todoList.get(todoId);
             }
         }
@@ -72,48 +75,49 @@ public class TodoService {
     }
 
     public void createStep(Long todoId, List<Step> createdSteps) {
-        Todo exists = todoList.get(todoId);
+        var exists = todoList.get(todoId);
         if (exists != null) {
-            System.out.println("Size of step array before adding new: " + exists.getsteps().size());
+            System.out.println("Size of step array before adding new: " + exists.steps().size());
             for (Step step : createdSteps) {
-                if (exists.getsteps().size() < MAX_NUM_STEPS) {
-                    step.setId(exists.getsteps().size() + 1L);
-                    exists.getsteps().add(step);
+                if (exists.steps().size() < MAX_NUM_STEPS) {
+                    step.setId(exists.steps().size() + 1L);
+                    exists.steps().add(step);
                 } else {
+                    System.out.println("You have reached the maximum number of steps of 10 for todo with id: " + exists.id());
                     break;
                 }
             }
-            System.out.println("Size of step array after adding new: " + exists.getsteps().size());
+            System.out.println("Size of step array after adding new: " + exists.steps().size());
         } else {
-            System.out.println("Exceeded maximum number of steps of 10 for todo, or todo does not exist.");
+            System.out.println("Such a Todo does not exist.");
         }
     }
 
     public void deleteStep(Long todoId, List<Long> stepIds) {
-        Todo exists = todoList.get(todoId);
+        var exists = todoList.get(todoId);
         if (exists != null && stepIds.size() > 0 && !stepIds.contains(0)) {
-            System.out.println("Size of step array before removing step: " + exists.getsteps().size());
-            Iterator<Step> iterator = exists.getsteps().iterator();
+            System.out.println("Size of step array before removing step: " + exists.steps().size());
+            Iterator<Step> iterator = exists.steps().iterator();
             while (iterator.hasNext()) {
                 Step step = iterator.next();
-                if (stepIds.contains(step.getId())) {
+                if (stepIds.contains(step.id())) {
                     iterator.remove();
-                    System.out.println("Step with id:" + step.getId() + " was removed.");
+                    System.out.println("Step with id:" + step.id() + " was removed.");
                 }
             }
-            System.out.println("Size of step array after removing step: " + exists.getsteps().size());
+            System.out.println("Size of step array after removing step: " + exists.steps().size());
         } else {
             System.out.println("No such todo with this id exists.");
         }
     }
 
     public void updateStep(Long todoId, int oldStepId, Step updatedStep) {
-        Todo exists = todoList.get(todoId);
+        var exists = todoList.get(todoId);
         if (exists != null && oldStepId >= 0) {
-            for (Step step : exists.getsteps()) {
-                if (step.getId() == oldStepId) {
-                    step.setName(updatedStep.getName());
-                    step.setDescription(updatedStep.getDescription());
+            for (Step step : exists.steps()) {
+                if (step.id() == oldStepId) {
+                    step.setName(updatedStep.name());
+                    step.setDescription(updatedStep.description());
                     System.out.println("Step with id:" + oldStepId + " has been updated");
                     break;
                 }
@@ -136,7 +140,7 @@ public class TodoService {
     }
 
     private List<Todo> sortByPriority(List<Todo> todos) {
-        Comparator<Todo> priorityComparator = Comparator.comparing(Todo::getPriority);
+        Comparator<Todo> priorityComparator = Comparator.comparing(Todo::priority);
         return todos.stream()
                 .sorted(priorityComparator)
                 .collect(Collectors.toList());
