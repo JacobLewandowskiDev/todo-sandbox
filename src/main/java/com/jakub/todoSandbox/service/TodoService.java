@@ -79,7 +79,7 @@ public class TodoService {
         if (exists != null) {
             System.out.println("Size of step array before adding new: " + exists.steps().size());
             for (Step step : createdSteps) {
-                if (exists.steps().size() < MAX_NUM_STEPS) {
+                if (canAddStep(exists)) {
                     step.setId(exists.steps().size() + 1L);
                     exists.steps().add(step);
                 } else {
@@ -125,6 +125,10 @@ public class TodoService {
         } else {
             System.out.println("No such todo or step exists.");
         }
+    }
+
+    private boolean canAddStep(Todo todo) {
+        return todo.steps().size() < MAX_NUM_STEPS;
     }
 
     private boolean validateNameAndDesc(String name, String description) {
