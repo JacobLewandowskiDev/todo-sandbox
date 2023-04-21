@@ -12,6 +12,7 @@ public class InMemoryRepository implements TodoRepository{
 
     private final Map<Long, Todo> todoList = new HashMap<Long, Todo>();
     private static final int MAX_NUM_STEPS = 10;
+    private Long maxTodoId = 0L;
 
     @Override
     public Todo findTodoById(Long todoId) {
@@ -32,10 +33,13 @@ public class InMemoryRepository implements TodoRepository{
     @Override
     public Todo saveTodo(Todo todo) {
         if (validateNameAndDesc(todo.name(), todo.description())) {
-            var toBeSavedTodo = new Todo((todoList.size() + 1L), todo.name(), todo.description(), todo.priority(), todo.steps());
+            var toBeSavedTodo = new Todo((maxTodoId + 1L), todo.name(), todo.description(), todo.priority(), todo.steps());
             todoList.put(toBeSavedTodo.id(), toBeSavedTodo);
+            maxTodoId = toBeSavedTodo.id();
             System.out.println(
-                    "New todo was created: \n name: " + toBeSavedTodo.name()
+                    "New todo was created:" +
+                              "\n id: " + toBeSavedTodo.id()
+                            + " \n name: " + toBeSavedTodo.name()
                             + "\n description: " + toBeSavedTodo.description()
                             + "\n priority: " + toBeSavedTodo.priority()
                             + "\n steps: \n" + toBeSavedTodo.steps().get(0).name());
@@ -49,7 +53,7 @@ public class InMemoryRepository implements TodoRepository{
     public void updateTodo(Long todoId, Todo todo) {
         var exists = todoList.get(todoId);
         if (exists != null) {
-            todoList.put(todoId, todo);
+            todoList.put(todoId, createNewTodoId(todoId, todo));
             System.out.println("Todo using id: {" + todoId + "} has been updated.");
         } else {
             System.out.println("No todo exists under this id.");
@@ -92,7 +96,7 @@ public class InMemoryRepository implements TodoRepository{
         if (existingTodo != null) {
             for (int i = 0; i < existingTodo.steps().size(); i++) {
                 if (existingTodo.steps().get(i).id() == oldStepId) {
-                    existingTodo.steps().set(i, updatedStep);
+                    existingTodo.steps().set(i, createNewStepId(((long) oldStepId), updatedStep));
                     System.out.println("Step with id:" + oldStepId + " has been updated");
                     return;
                 }
@@ -130,6 +134,14 @@ public class InMemoryRepository implements TodoRepository{
     private Step createNewStepForTodo(Todo todo, Step step) {
         Long newStepId = (long) (todo.steps().size() + 1);
         return new Step(newStepId, step.name(), step.description());
+    }
+
+    private Step createNewStepId(Long id, Step step) {
+        return new Step(id, step.name(), step.description());
+    }
+
+    private Todo createNewTodoId(Long id, Todo todo) {
+        return new Todo(id, todo.name(), todo.description(), todo.priority(), todo.steps());
     }
 
     private boolean validateNameAndDesc(String name, String description) {
