@@ -5,14 +5,15 @@ import com.jakub.todoSandbox.model.Todo;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TodoRepository {
     // TodoMethods
-    Todo findTodoById(Long todoId);
+    Optional<Todo> findTodoById(Long todoId);
     List<Todo> findAllTodos();
     Todo saveTodo(Todo todo);
-    void deleteTodo(Long todoId);
+    Todo deleteTodo(Long todoId);
     void updateTodo(Long todoId, Todo todo);
 
     // Step Methods
