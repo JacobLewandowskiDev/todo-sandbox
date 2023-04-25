@@ -2,17 +2,22 @@ package com.jakub.todoSandbox.repository;
 
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
+import com.jakub.todoSandbox.model.ValidationException;
+import com.jakub.todoSandbox.service.TodoService;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Repository
-public class InMemoryRepository implements TodoRepository{
+public class InMemoryRepository implements TodoRepository {
 
     private final Map<Long, Todo> todos = new HashMap<Long, Todo>();
-    private static final int MAX_NUM_STEPS = 10;
+    private final TodoService todoService;
     private Long maxTodoId = 0L;
+
+    public InMemoryRepository(TodoService todoService) {
+        this.todoService = todoService;
+    }
 
     @Override
     public Optional<Todo> findTodoById(Long todoId) {
@@ -22,52 +27,56 @@ public class InMemoryRepository implements TodoRepository{
     @Override
     public List<Todo> findAllTodos() {
         List<Todo> todoMapToList = new ArrayList<>(todos.values());
-        return sortByPriority(todoMapToList);
+        return todoService.sortByPriority(todoMapToList);
     }
 
     @Override
-    public Todo saveTodo(Todo todo) {
-        if (validateNameAndDesc(todo.name(), todo.description())) {
+    public Todo saveTodo(Todo todo) throws ValidationException {
+        if (todoService.validateNameAndDesc(todo.name(), todo.description())) {
             var toBeSavedTodo = new Todo((maxTodoId + 1L), todo.name(), todo.description(), todo.priority(), todo.steps());
             todos.put(toBeSavedTodo.id(), toBeSavedTodo);
             maxTodoId = toBeSavedTodo.id();
             System.out.println(
                     "New todo was created:" +
-                              "\n id: " + toBeSavedTodo.id()
+                            "\n id: " + toBeSavedTodo.id()
                             + " \n name: " + toBeSavedTodo.name()
                             + "\n description: " + toBeSavedTodo.description()
                             + "\n priority: " + toBeSavedTodo.priority()
                             + "\n steps: \n" + toBeSavedTodo.steps().get(0).name());
             return toBeSavedTodo;
         } else {
-            return null;
+            throw new ValidationException("The name, or description for the todo " + todo.name()
+                    + "with id: :" + todo.id() + " did not pass the validation");
         }
     }
 
     @Override
-    public void updateTodo(Long todoId, Todo todo) {
-        var exists = todos.get(todoId);
-        if (exists != null) {
-            todos.put(todoId, createNewTodoId(todoId, todo));
+    public void updateTodo(Long todoId, Todo todo) throws ValidationException {
+        var existingTodo = todos.get(todoId);
+        if (existingTodo != null) {
+            if (todo.id() == null) {
+                throw new ValidationException("Todo id cannot be null");
+            }
+            todos.put(todoId, todoService.createNewTodoId(todoId, todo));
             System.out.println("Todo using id: {" + todoId + "} has been updated.");
         } else {
-            System.out.println("No todo exists under this id.");
+            throw new ValidationException("No todo exists under id: " + todoId);
         }
     }
 
     @Override
     public Todo deleteTodo(Long todoId) {
-            return todos.remove(todoId);
+        return todos.remove(todoId);
     }
 
     @Override
-    public void saveSteps(Long todoId, List<Step> createdSteps) {
+    public void saveSteps(Long todoId, List<Step> createdSteps) throws ValidationException {
         var existingTodo = todos.get(todoId);
         if (existingTodo != null) {
             System.out.println("Size of step array before adding new: " + existingTodo.steps().size());
             for (Step step : createdSteps) {
-                if (canAddStepToTodo(existingTodo)) {
-                    Step createdStep = createNewStepForTodo(existingTodo, step);
+                if (todoService.canAddStepToTodo(existingTodo)) {
+                    Step createdStep = todoService.createNewStepForTodo(existingTodo, step);
                     existingTodo.steps().add(createdStep);
                 } else {
                     System.out.println("You have reached the maximum number of steps of 10 for todo with id: " + existingTodo.id());
@@ -75,26 +84,26 @@ public class InMemoryRepository implements TodoRepository{
                 }
             }
             System.out.println("Size of step array after adding new: " + existingTodo.steps().size());
-        } else {
-            System.out.println("Such a Todo does not exist.");
         }
+        throw new ValidationException("Creation of step was not possible, due to either non existing todo, " +
+                "or the new steps have not passed the validation process.");
     }
 
     @Override
-    public void updateStep(Long todoId, int oldStepId, Step updatedStep) {
+    public void updateStep(Long todoId, Step updatedStep) throws ValidationException {
         var existingTodo = todos.get(todoId);
         if (existingTodo != null) {
-            for (int i = 0; i < existingTodo.steps().size(); i++) {
-                if (existingTodo.steps().get(i).id() == oldStepId) {
-                    existingTodo.steps().set(i, createNewStepId(((long) oldStepId), updatedStep));
-                    System.out.println("Step with id:" + oldStepId + " has been updated");
-                    return;
-                }
+            List<Step> steps = existingTodo.steps();
+            Optional<Step> stepToUpdate = steps.stream()
+                    .filter(step -> Objects.equals(step.id(), updatedStep.id()))
+                    .findFirst();
+            if (stepToUpdate.isPresent()) {
+                int index = steps.indexOf(stepToUpdate.get());
+                steps.set(index, todoService.createNewStepId(((long) updatedStep.id()), updatedStep));
+                System.out.println("Step with id:" + updatedStep.id() + " has been updated");
             }
-            System.out.println("Step with id:" + oldStepId + " does not exist");
-        } else {
-            System.out.println("Todo with id:" + todoId + " does not exist");
         }
+        throw new ValidationException("Update was not possible, due to either the step not existing or the Id was invalid");
     }
 
     @Override
@@ -116,40 +125,4 @@ public class InMemoryRepository implements TodoRepository{
         }
     }
 
-
-    private boolean canAddStepToTodo(Todo todo) {
-        return todo.steps().size() < MAX_NUM_STEPS;
-    }
-
-    private Step createNewStepForTodo(Todo todo, Step step) {
-        Long newStepId = (long) (todo.steps().size() + 1);
-        return new Step(newStepId, step.name(), step.description());
-    }
-
-    private Step createNewStepId(Long id, Step step) {
-        return new Step(id, step.name(), step.description());
-    }
-
-    private Todo createNewTodoId(Long id, Todo todo) {
-        return new Todo(id, todo.name(), todo.description(), todo.priority(), todo.steps());
-    }
-
-    private boolean validateNameAndDesc(String name, String description) {
-        if (!name.isEmpty() && !name.trim().isEmpty() && name.length() <= 100 && description.length() < 3000) {
-            boolean hasAlpha = name.matches("^.*[^a-zA-Z0-9 ].*$");
-            if (!hasAlpha) {
-                System.out.println("Name only has alphanumeric");
-                return true;
-            }
-        } else
-            System.out.println("Has non alphanumeric symbol or name is null");
-        return false;
-    }
-
-    private List<Todo> sortByPriority(List<Todo> todos) {
-        Comparator<Todo> priorityComparator = Comparator.comparing(Todo::priority);
-        return todos.stream()
-                .sorted(priorityComparator)
-                .collect(Collectors.toList());
-    }
 }

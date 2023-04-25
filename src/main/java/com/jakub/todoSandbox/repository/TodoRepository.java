@@ -2,6 +2,7 @@ package com.jakub.todoSandbox.repository;
 
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
+import com.jakub.todoSandbox.model.ValidationException;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,12 +13,12 @@ public interface TodoRepository {
     // TodoMethods
     Optional<Todo> findTodoById(Long todoId);
     List<Todo> findAllTodos();
-    Todo saveTodo(Todo todo);
+    Todo saveTodo(Todo todo) throws ValidationException;
     Todo deleteTodo(Long todoId);
-    void updateTodo(Long todoId, Todo todo);
+    void updateTodo(Long todoId, Todo todo) throws ValidationException;
 
     // Step Methods
-    void saveSteps(Long todoId, List<Step> createdSteps);
+    void saveSteps(Long todoId, List<Step> createdSteps) throws ValidationException;
     void deleteSteps(Long todoId, List<Long> stepIds);
-    void updateStep(Long todoId, int oldStepId, Step updatedStep);
+    void updateStep(Long todoId, Step updatedStep) throws ValidationException;
 }
