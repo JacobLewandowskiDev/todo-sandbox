@@ -17,7 +17,7 @@ public class TodoService {
         if (name != null && !name.isBlank() && name.length() <= 100 && description.length() < 3000) {
             boolean hasNonAlphanumeric = name.matches("^.*[^a-zA-Z0-9 ].*$");
             if (!hasNonAlphanumeric) {
-                System.out.println("Name only has alphanumeric");
+                System.out.println("Name only has alphanumeric, description fits the maximum character limit - validation passed.");
                 return true;
             }
         }

@@ -53,10 +53,7 @@ public class InMemoryRepository implements TodoRepository {
     @Override
     public void updateTodo(Long todoId, Todo todo) throws ValidationException {
         var existingTodo = todos.get(todoId);
-        if (existingTodo != null) {
-            if (todo.id() == null) {
-                throw new ValidationException("Todo id cannot be null");
-            }
+        if (existingTodo != null && todoId != null) {
             todos.put(todoId, todoService.createNewTodoId(todoId, todo));
             System.out.println("Todo using id: {" + todoId + "} has been updated.");
         } else {
@@ -75,18 +72,19 @@ public class InMemoryRepository implements TodoRepository {
         if (existingTodo != null) {
             System.out.println("Size of step array before adding new: " + existingTodo.steps().size());
             for (Step step : createdSteps) {
-                if (todoService.canAddStepToTodo(existingTodo)) {
+                if (todoService.canAddStepToTodo(existingTodo) && todoService.validateNameAndDesc(step.name(), step.description())) {
                     Step createdStep = todoService.createNewStepForTodo(existingTodo, step);
                     existingTodo.steps().add(createdStep);
                 } else {
-                    System.out.println("You have reached the maximum number of steps of 10 for todo with id: " + existingTodo.id());
-                    break;
+                    throw new ValidationException("You have reached the maximum number of steps of 10 for todo with id: " + existingTodo.id()
+                            + ", or a step has not passed the name/description validation process.");
                 }
             }
             System.out.println("Size of step array after adding new: " + existingTodo.steps().size());
+        } else {
+            throw new ValidationException("Creation of step was not possible, due to either non existing todo, " +
+                    "or the new steps have not passed the validation process.");
         }
-        throw new ValidationException("Creation of step was not possible, due to either non existing todo, " +
-                "or the new steps have not passed the validation process.");
     }
 
     @Override
@@ -99,11 +97,16 @@ public class InMemoryRepository implements TodoRepository {
                     .findFirst();
             if (stepToUpdate.isPresent()) {
                 int index = steps.indexOf(stepToUpdate.get());
-                steps.set(index, todoService.createNewStepId(((long) updatedStep.id()), updatedStep));
-                System.out.println("Step with id:" + updatedStep.id() + " has been updated");
+                if (todoService.validateNameAndDesc(updatedStep.name(), updatedStep.description())) {
+                    steps.set(index, updatedStep);
+                    System.out.println("Step with id:" + updatedStep.id() + " has been updated");
+                } else {
+                    throw new ValidationException("The updated step did not pass the validation process.");
+                }
             }
+        } else {
+            throw new ValidationException("Update was not possible, due to either the step not existing or the Id was invalid");
         }
-        throw new ValidationException("Update was not possible, due to either the step not existing or the Id was invalid");
     }
 
     @Override
