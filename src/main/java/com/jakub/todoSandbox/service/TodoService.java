@@ -34,10 +34,6 @@ public class TodoService {
         return new Step(newStepId, step.name(), step.description());
     }
 
-    public Step createNewStepId(Long id, Step step) {
-        return new Step(id, step.name(), step.description());
-    }
-
     public Todo createNewTodoId(Long id, Todo todo) {
         return new Todo(id, todo.name(), todo.description(), todo.priority(), todo.steps());
     }
