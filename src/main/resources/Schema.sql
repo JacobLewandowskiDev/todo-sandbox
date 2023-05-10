@@ -1,3 +1,6 @@
+
+USE `tododb`;
+
 drop table if exists todo, step;
 
 
