@@ -111,6 +111,7 @@
 									<name>org.jooq.meta.postgres.PostgresDatabase</name>
 									<includes>.*</includes>
 									<excludes></excludes>
+									<inputSchema>tododb</inputSchema>
 								</database>
 								<generate>
 									<fluentSetters>true</fluentSetters>
