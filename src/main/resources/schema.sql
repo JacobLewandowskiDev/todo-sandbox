@@ -1,21 +1,23 @@
-DROP TABLE IF EXISTS tododb.step;
-DROP TABLE IF EXISTS tododb.todo;
-DROP TYPE IF EXISTS tododb.priority_enum;
+SET search_path TO tododb;
 
-CREATE TYPE tododb.priority_enum AS ENUM ('LOW', 'MEDIUM', 'HIGH');
+DROP TABLE IF EXISTS step;
+DROP TABLE IF EXISTS todo;
+DROP TYPE IF EXISTS priority_enum;
 
-CREATE TABLE IF NOT EXISTS tododb.todo (
+CREATE TYPE priority_enum AS ENUM ('LOW', 'MEDIUM', 'HIGH');
+
+CREATE TABLE IF NOT EXISTS todo (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255),
     description TEXT,
-    priority tododb.priority_enum
+    priority priority_enum
 );
 
-CREATE TABLE IF NOT EXISTS tododb.step (
+CREATE TABLE IF NOT EXISTS step (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     done BOOLEAN DEFAULT FALSE,
     todo_id BIGINT NOT NULL,
-    FOREIGN KEY (todo_id) REFERENCES tododb.todo (id)
+    FOREIGN KEY (todo_id) REFERENCES todo (id)
 );
