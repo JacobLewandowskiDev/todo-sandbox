@@ -91,7 +91,7 @@
 								<driver>org.postgresql.Driver</driver>
 								<url>jdbc:postgresql://localhost:5432/demoDB</url>
 								<user>postgres</user>
-								<password>pass</password>
+								<password>1234</password>
 							</jdbc>
 							<generator>
 								<database>

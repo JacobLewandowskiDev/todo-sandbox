@@ -4,19 +4,26 @@ import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
 import com.jakub.todoSandbox.service.TodoService;
+import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
 @Repository
-public class InMemoryRepository implements TodoRepository {
+public class DBRepository implements TodoRepository {
+
+    @Autowired
+    private final DSLContext dslContext;
+
 
     private final Map<Long, Todo> todos = new HashMap<Long, Todo>();
     private final TodoService todoService;
     private Long maxTodoId = 0L;
 
-    public InMemoryRepository(TodoService todoService) {
+    public DBRepository(TodoService todoService, DSLContext dslContext) {
         this.todoService = todoService;
+        this.dslContext = dslContext;
     }
 
     @Override
