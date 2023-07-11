@@ -1,5 +1,6 @@
 package com.jakub.todoSandbox.controller;
 
+import com.jakub.todoSandbox.jooq.sample.model.tables.records.TodoRecord;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;

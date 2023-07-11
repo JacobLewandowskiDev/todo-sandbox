@@ -1,5 +1,6 @@
 package com.jakub.todoSandbox.repository;
 
+import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
@@ -8,28 +9,52 @@ import org.jooq.DSLContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import static com.jakub.todoSandbox.jooq.sample.model.tables.Todo.TODO;
+import static com.jakub.todoSandbox.jooq.sample.model.tables.Step.STEP;
+
 import java.util.*;
 
 @Repository
 public class DBRepository implements TodoRepository {
 
     @Autowired
-    private final DSLContext dslContext;
+    private final DSLContext context;
 
 
     private final Map<Long, Todo> todos = new HashMap<Long, Todo>();
     private final TodoService todoService;
     private Long maxTodoId = 0L;
 
-    public DBRepository(TodoService todoService, DSLContext dslContext) {
+    public DBRepository(TodoService todoService, DSLContext context) {
         this.todoService = todoService;
-        this.dslContext = dslContext;
+        this.context = context;
     }
 
     @Override
     public Optional<Todo> findTodoById(Long todoId) {
-        return Optional.ofNullable(todos.get(todoId));
+        return context.selectFrom(TODO)
+                .where(TODO.ID.eq(todoId))
+                .fetchOptional()
+                .map(record -> {
+                    List<Step> steps = context.selectFrom(STEP)
+                            .where(STEP.TODO_ID.eq(todoId))
+                            .fetchInto(Step.class);
+                    Priority priority = Priority.valueOf(record.getPriority().name());
+                    return new Todo(
+                            record.getId(),
+                            record.getName(),
+                            record.getDescription(),
+                            priority,
+                            steps
+                    );
+                });
     }
+
+//    @Override
+//    public Optional<Todo> findTodoById(Long todoId) {
+//        return Optional.ofNullable(todos.get(todoId));
+//    }
+
 
     @Override
     public List<Todo> findAllTodos() {
