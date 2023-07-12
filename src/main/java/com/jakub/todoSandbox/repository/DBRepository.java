@@ -8,6 +8,8 @@ import com.jakub.todoSandbox.service.TodoService;
 import org.jooq.DSLContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.jakub.todoSandbox.jooq.sample.model.tables.Todo.TODO;
 import static com.jakub.todoSandbox.jooq.sample.model.tables.Step.STEP;
@@ -55,12 +57,40 @@ public class DBRepository implements TodoRepository {
 //        return Optional.ofNullable(todos.get(todoId));
 //    }
 
-
+    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     @Override
     public List<Todo> findAllTodos() {
-        List<Todo> todoMapToList = new ArrayList<>(todos.values());
-        return todoService.sortByPriority(todoMapToList);
+        return context.selectFrom(TODO)
+                .fetch()
+                .map(record -> {
+                    List<Step> steps = fetchSteps(record.getId());
+                    return new Todo(
+                            record.getId(),
+                            record.getName(),
+                            record.getDescription(),
+                            Priority.valueOf(record.getPriority().name()),
+                            steps
+                    );
+                });
     }
+
+    private List<Step> fetchSteps(Long todoId) {
+        return context.selectFrom(STEP)
+                .where(STEP.TODO_ID.eq(todoId))
+                .fetch()
+                .map(stepRecord ->
+                        new Step(
+                                stepRecord.getId(),
+                                stepRecord.getName(),
+                                stepRecord.getDescription(),
+                                stepRecord.getTodoId()
+                        ));
+    }
+
+//    public List<Todo> findAllTodos() {
+//        List<Todo> todoMapToList = new ArrayList<>(todos.values());
+//        return todoService.sortByPriority(todoMapToList);
+//    }
 
     @Override
     public Todo saveTodo(Todo todo) throws ValidationException {
@@ -105,8 +135,8 @@ public class DBRepository implements TodoRepository {
             System.out.println("Size of step array before adding new: " + existingTodo.steps().size());
             for (Step step : createdSteps) {
                 if (todoService.canAddStepToTodo(existingTodo) && todoService.validateNameAndDesc(step.name(), step.description())) {
-                    Step createdStep = todoService.createNewStepForTodo(existingTodo, step);
-                    existingTodo.steps().add(createdStep);
+//                    Step createdStep = todoService.createNewStepForTodo(existingTodo, step);
+//                    existingTodo.steps().add(createdStep);
                 } else {
                     throw new ValidationException("You have reached the maximum number of steps of 10 for todo with id: " + existingTodo.id()
                             + ", or a step has not passed the name/description validation process.");

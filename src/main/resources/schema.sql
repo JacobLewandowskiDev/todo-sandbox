@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS step (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    done BOOLEAN DEFAULT FALSE,
     todo_id BIGINT NOT NULL,
     FOREIGN KEY (todo_id) REFERENCES todo (id)
 );
