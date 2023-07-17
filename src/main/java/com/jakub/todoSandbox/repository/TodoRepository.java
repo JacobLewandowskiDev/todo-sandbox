@@ -15,7 +15,7 @@ public interface TodoRepository {
     Optional<Todo> findTodoById(Long todoId);
     List<Todo> findAllTodos();
     Todo saveTodo(Todo todo) throws ValidationException;
-    Todo deleteTodo(Long todoId);
+    Optional<Todo> deleteTodo(Long todoId);
     void updateTodo(Long todoId, Todo todo) throws ValidationException;
 
     // Step Methods

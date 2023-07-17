@@ -20,3 +20,10 @@ CREATE TABLE IF NOT EXISTS step (
     todo_id BIGINT NOT NULL,
     FOREIGN KEY (todo_id) REFERENCES todo (id)
 );
+
+ALTER TABLE step
+DROP CONSTRAINT step_todo_id_fkey,
+ADD CONSTRAINT step_todo_id_fkey
+    FOREIGN KEY (todo_id)
+    REFERENCES todo (id)
+    ON DELETE CASCADE;
