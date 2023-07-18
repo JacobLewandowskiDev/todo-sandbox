@@ -57,14 +57,14 @@ public class JOOQRepository implements TodoRepository {
     @Override
     public List<Todo> findAllTodos() {
         System.out.println("findAllTodos() method call");
-        return context.selectFrom(TODO)
+        return todoService.sortByPriority(context.selectFrom(TODO)
                 .fetch()
                 .map(record -> Todo.builder(record.getName())
                         .id(record.getId())
                         .description(record.getDescription())
                         .priority(Priority.valueOf(record.getPriority().name()))
                         .steps(fetchSteps(record.getId()))
-                        .build());
+                        .build()));
     }
 
     @Transactional
