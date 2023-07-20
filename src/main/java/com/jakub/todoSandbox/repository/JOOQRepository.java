@@ -24,8 +24,6 @@ public class JOOQRepository implements TodoRepository {
     @Autowired
     private final DSLContext context;
 
-
-    private final Map<Long, Todo> todos = new HashMap<Long, Todo>();
     private final TodoService todoService;
 
     public JOOQRepository(TodoService todoService, DSLContext context) {
@@ -33,9 +31,10 @@ public class JOOQRepository implements TodoRepository {
         this.context = context;
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     @Override
     public Optional<Todo> findTodoById(Long todoId) {
-        System.out.println("findTodoById() method call with Todo Id: {" + todoId + "}.");
+        System.out.println("findTodoById() method call with todoId: {" + todoId + "}.");
         return context.selectFrom(TODO)
                 .where(TODO.ID.eq(todoId))
                 .fetchOptional()
@@ -80,6 +79,7 @@ public class JOOQRepository implements TodoRepository {
                     .fetchOne();
 
             for (Step step : todo.steps()) {
+                assert todoRecord != null;
                 context.insertInto(STEP)
                         .set(STEP.NAME, step.name())
                         .set(STEP.DESCRIPTION, step.description())
@@ -87,6 +87,7 @@ public class JOOQRepository implements TodoRepository {
                         .execute();
             }
 
+            assert todoRecord != null;
             List<Step> savedSteps = context.selectFrom(STEP)
                     .where(STEP.TODO_ID.eq(todoRecord.getId()))
                     .fetchInto(Step.class);
@@ -97,14 +98,15 @@ public class JOOQRepository implements TodoRepository {
                     .steps(savedSteps)
                     .build();
         } else throw new ValidationException("The name, or description for the todo " + todo.name()
-                + "with id: : {" + todo.id() + "} did not pass the validation");
+                + "with todoId: : {" + todo.id() + "} did not pass the validation");
     }
 
+    @Transactional
     @Override
     public void updateTodo(Long todoId, Todo todo) throws ValidationException {
         System.out.println("updateTodo() method call");
         if (context.selectFrom(TODO).where(TODO.ID.eq(todoId)).fetchOne() != null) {
-            int updatedRecord = context.update(TODO)
+            var updatedRecord = context.update(TODO)
                     .set(TODO.NAME, todo.name())
                     .set(TODO.DESCRIPTION, todo.description())
                     .set(TODO.PRIORITY, PriorityEnum.valueOf(todo.priority().name()))
@@ -112,12 +114,12 @@ public class JOOQRepository implements TodoRepository {
                     .execute();
 
             if (updatedRecord > 0) {
-                System.out.println("Todo using id: {" + todoId + "} has been updated.");
+                System.out.println("Todo using todoId: {" + todoId + "} has been updated.");
             } else {
-                throw new ValidationException("Update operation failed for todo with id: {" + todoId + "}");
+                throw new ValidationException("Update operation failed for todo with todoId: {" + todoId + "}");
             }
         } else {
-            throw new ValidationException("No todo exists under id: {" + todoId + "}");
+            throw new ValidationException("No todo exists under todoId: {" + todoId + "}");
         }
     }
 
@@ -130,69 +132,99 @@ public class JOOQRepository implements TodoRepository {
                     .where(TODO.ID.eq(todoId))
                     .execute();
         }
-        System.out.println("deleteTodo() method call with Todo id: " + todoId + ".");
+        System.out.println("deleteTodo() method call with todoId: " + todoId + ".");
         return deletedTodo;
     }
 
+    @Transactional
     @Override
     public void saveSteps(Long todoId, List<Step> createdSteps) throws ValidationException {
-        var existingTodo = todos.get(todoId);
-        if (existingTodo != null) {
-            System.out.println("Size of step array before adding new: " + existingTodo.steps().size());
+        System.out.println("saveSteps() method called with todoId: {" + todoId + "].");
+        Todo doesTodoExist = findTodoById(todoId)
+                .orElseThrow(() -> new ValidationException("Todo with id " + todoId + " not found"));
+
+        if (doesTodoExist != null) {
             for (Step step : createdSteps) {
-                if (todoService.canAddStepToTodo(existingTodo) && todoService.validateNameAndDesc(step.name(), step.description())) {
-//                    Step createdStep = todoService.createNewStepForTodo(existingTodo, step);
-//                    existingTodo.steps().add(createdStep);
+                if (todoService.canAddStepToTodo(doesTodoExist) && todoService.validateNameAndDesc(step.name(), step.description())) {
+                    var addStep = context.insertInto(STEP)
+                            .set(STEP.NAME, step.name())
+                            .set(STEP.DESCRIPTION, step.description())
+                            .set(STEP.TODO_ID, doesTodoExist.id())
+                            .execute();
                 } else {
-                    throw new ValidationException("You have reached the maximum number of steps of 10 for todo with id: " + existingTodo.id()
+                    throw new ValidationException("You have reached the maximum number of steps of 10 for todo with id: " + doesTodoExist.id()
                             + ", or a step has not passed the name/description validation process.");
                 }
             }
-            System.out.println("Size of step array after adding new: " + existingTodo.steps().size());
         } else {
             throw new ValidationException("Creation of step was not possible, due to either non existing todo, " +
                     "or the new steps have not passed the validation process.");
         }
     }
 
+    @Transactional
     @Override
     public void updateStep(Long todoId, Step updatedStep) throws ValidationException {
-        var existingTodo = todos.get(todoId);
-        if (existingTodo != null) {
-            List<Step> steps = existingTodo.steps();
-            Optional<Step> stepToUpdate = steps.stream()
-                    .filter(step -> Objects.equals(step.id(), updatedStep.id()))
-                    .findFirst();
-            if (stepToUpdate.isPresent()) {
-                int index = steps.indexOf(stepToUpdate.get());
-                if (todoService.validateNameAndDesc(updatedStep.name(), updatedStep.description())) {
-                    steps.set(index, updatedStep);
-                    System.out.println("Step with id:" + updatedStep.id() + " has been updated");
+        System.out.println("updateStep() method called with todoId: " + todoId);
+
+        Todo todoToUpdate = findTodoById(todoId)
+                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: " + todoId));
+
+        boolean stepExists = todoToUpdate.steps().stream()
+                .anyMatch(step -> Objects.equals(step.id(), updatedStep.id()));
+
+        if (stepExists) {
+            if (todoService.validateNameAndDesc(updatedStep.name(), updatedStep.description())) {
+                var updatedRows = context.update(STEP)
+                        .set(STEP.NAME, updatedStep.name())
+                        .set(STEP.DESCRIPTION, updatedStep.description())
+                        .where(STEP.ID.eq(updatedStep.id()))
+                        .and(STEP.TODO_ID.eq(todoId))
+                        .execute();
+
+                if (updatedRows > 0) {
+                    System.out.println("Step with stepId: " + updatedStep.id() + " has been updated");
                 } else {
-                    throw new ValidationException("The updated step did not pass the validation process.");
+                    throw new ValidationException("Failed to update the step with stepId: " + updatedStep.id());
                 }
+            } else {
+                throw new ValidationException("The updated step did not pass the validation process.");
             }
         } else {
-            throw new ValidationException("Update was not possible, due to either the step not existing or the Id was invalid");
+            throw new ValidationException("The step to update was not found in the todo with todoId: " + todoId);
         }
     }
 
+    @Transactional
     @Override
-    public void deleteSteps(Long todoId, List<Long> stepIds) {
-        var existingTodo = todos.get(todoId);
-        if (existingTodo != null) {
-            System.out.println("Size of step array before removing step: " + existingTodo.steps().size());
-            Iterator<Step> iterator = existingTodo.steps().iterator();
-            while (iterator.hasNext()) {
-                Step step = iterator.next();
-                if (stepIds.contains(step.id())) {
-                    iterator.remove();
-                    System.out.println("Step with id:" + step.id() + " was removed.");
+    public void deleteSteps(Long todoId, List<Long> stepIds) throws ValidationException {
+        System.out.println("deleteSteps() method called with todoId: {" + todoId + "}.");
+
+        Todo doesTodoExist = findTodoById(todoId)
+                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: {" + todoId + "}."));
+
+        if (doesTodoExist != null) {
+            for (Long stepId : stepIds) {
+                boolean stepExists = doesTodoExist.steps().stream()
+                        .anyMatch(step -> Objects.equals(step.id(), stepId));
+
+                if (stepExists) {
+                    var deletedRows = context.deleteFrom(STEP)
+                            .where(STEP.ID.eq(stepId))
+                            .and(STEP.TODO_ID.eq(todoId))
+                            .execute();
+
+                    if (deletedRows > 0) {
+                        System.out.println("Step with stepId: {" + stepId + "} was removed.");
+                    } else {
+                        throw new ValidationException("Failed to delete the step with stepId: {" + stepId + "}.");
+                    }
+                } else {
+                    throw new ValidationException("The step with stepId: {" + stepId + "} does not exist in the todo with todoId: {" + todoId + "}.");
                 }
             }
-            System.out.println("Size of step array after removing step: " + existingTodo.steps().size());
         } else {
-            System.out.println("No such todo with this id exists.");
+            throw new ValidationException("Todo with the provided id does not exist.");
         }
     }
 
@@ -208,52 +240,4 @@ public class JOOQRepository implements TodoRepository {
                                 stepRecord.getTodoId()
                         ));
     }
-
-
-    //    @Override
-//    public Optional<Todo> findTodoById(Long todoId) {
-//        return Optional.ofNullable(todos.get(todoId));
-//    }
-
-//    @Override
-    //    public List<Todo> findAllTodos() {
-//        List<Todo> todoMapToList = new ArrayList<>(todos.values());
-//        return todoService.sortByPriority(todoMapToList);
-//    }
-
-//    @Override
-//    public Todo deleteTodo(Long todoId) {
-//        return todos.remove(todoId);
-//    }
-
-    //    @Override
-//    public Todo saveTodo(Todo todo) throws ValidationException {
-//        if (todoService.validateNameAndDesc(todo.name(), todo.description())) {
-//            var toBeSavedTodo = new Todo((maxTodoId + 1L), todo.name(), todo.description(), todo.priority(), todo.steps());
-//            todos.put(toBeSavedTodo.id(), toBeSavedTodo);
-//            maxTodoId = toBeSavedTodo.id();
-//            System.out.println(
-//                    "New todo was created:" +
-//                            "\n id: " + toBeSavedTodo.id()
-//                            + " \n name: " + toBeSavedTodo.name()
-//                            + "\n description: " + toBeSavedTodo.description()
-//                            + "\n priority: " + toBeSavedTodo.priority()
-//                            + "\n steps: \n" + toBeSavedTodo.steps().get(0).name());
-//            return toBeSavedTodo;
-//        } else {
-//            throw new ValidationException("The name, or description for the todo " + todo.name()
-//                    + "with id: :" + todo.id() + " did not pass the validation");
-//        }
-//    }
-
-//    @Override
-//    public void updateTodo(Long todoId, Todo todo) throws ValidationException {
-//        var existingTodo = todos.get(todoId);
-//        if (existingTodo != null && todoId != null) {
-//            todos.put(todoId, todoService.createNewTodoId(todoId, todo));
-//            System.out.println("Todo using id: {" + todoId + "} has been updated.");
-//        } else {
-//            throw new ValidationException("No todo exists under id: " + todoId);
-//        }
-//    }
 }

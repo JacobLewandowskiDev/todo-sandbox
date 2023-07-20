@@ -20,6 +20,6 @@ public interface TodoRepository {
 
     // Step Methods
     void saveSteps(Long todoId, List<Step> createdSteps) throws ValidationException;
-    void deleteSteps(Long todoId, List<Long> stepIds);
+    void deleteSteps(Long todoId, List<Long> stepIds) throws ValidationException;
     void updateStep(Long todoId, Step updatedStep) throws ValidationException;
 }
