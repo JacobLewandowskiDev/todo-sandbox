@@ -1,4 +1,3 @@
-SET search_path TO tododb;
 
 DROP TABLE IF EXISTS step;
 DROP TABLE IF EXISTS todo;

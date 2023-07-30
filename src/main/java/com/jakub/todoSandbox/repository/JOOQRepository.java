@@ -33,7 +33,7 @@ public class JOOQRepository implements TodoRepository {
 
     @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     @Override
-    public Optional<Todo> findTodoById(Long todoId) {
+    public Optional<Todo> findTodoById(long todoId) {
         System.out.println("findTodoById() method call with todoId: {" + todoId + "}.");
         return context.selectFrom(TODO)
                 .where(TODO.ID.eq(todoId))

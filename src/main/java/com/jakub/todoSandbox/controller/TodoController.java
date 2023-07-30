@@ -1,6 +1,5 @@
 package com.jakub.todoSandbox.controller;
 
-import com.jakub.todoSandbox.jooq.sample.model.tables.records.TodoRecord;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
@@ -36,7 +35,7 @@ public class TodoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Todo createTodo(@RequestBody Todo todo) throws ValidationException {
+    public Todo saveTodo(@RequestBody Todo todo) throws ValidationException {
         return todoRepository.saveTodo(todo);
     }
 
@@ -50,11 +49,10 @@ public class TodoController {
         todoRepository.updateTodo(id, todo);
     }
 
-    //Step mappings
     @PostMapping("/{id}/steps")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createStep(@PathVariable("id") Long id, @RequestBody List<Step> createdSteps) throws ValidationException{
-        todoRepository.saveSteps(id, createdSteps);
+    public void saveSteps(@PathVariable("id") Long id, @RequestBody List<Step> steps) throws ValidationException{
+        todoRepository.saveSteps(id, steps);
     }
 
     @DeleteMapping("/{id}/steps")
