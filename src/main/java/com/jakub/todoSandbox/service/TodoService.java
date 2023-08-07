@@ -1,6 +1,5 @@
 package com.jakub.todoSandbox.service;
 
-import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
 import org.springframework.stereotype.Service;
@@ -13,12 +12,12 @@ import java.util.stream.Collectors;
 public class TodoService {
     private static final int MAX_NUM_STEPS = 10;
 
-    public boolean validateNameAndDesc(String name, String description) throws ValidationException {
+    public void validateNameAndDesc(String name, String description) throws ValidationException {
         if (name != null && !name.isBlank() && name.length() <= 100 && description.length() < 3000) {
-            boolean hasNonAlphanumeric = name.matches("^.*[^a-zA-Z0-9 ].*$");
+            boolean hasNonAlphanumeric = name.matches(".*[^a-zA-Z0-9].*");
             if (!hasNonAlphanumeric) {
                 System.out.println("Name only has alphanumeric, description fits the maximum character limit - validation passed.");
-                return true;
+                return;
             }
         }
         throw new ValidationException("Name is null, blank, has non-alphanumeric characters, " +
@@ -29,7 +28,7 @@ public class TodoService {
         return todo.steps().size() < MAX_NUM_STEPS;
     }
 
-    public Todo createNewTodoId(Long id, Todo todo) {
+    public Todo createNewTodoId(long id, Todo todo) {
         return new Todo(id, todo.name(), todo.description(), todo.priority(), todo.steps());
     }
 

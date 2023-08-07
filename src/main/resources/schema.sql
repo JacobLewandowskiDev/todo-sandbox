@@ -1,4 +1,3 @@
-
 DROP TABLE IF EXISTS step;
 DROP TABLE IF EXISTS todo;
 DROP TYPE IF EXISTS priority_enum;
@@ -16,13 +15,5 @@ CREATE TABLE IF NOT EXISTS step (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    todo_id BIGINT NOT NULL,
-    FOREIGN KEY (todo_id) REFERENCES todo (id)
+    todo_id BIGINT NOT NULL REFERENCES todo (id) ON DELETE CASCADE
 );
-
-ALTER TABLE step
-DROP CONSTRAINT step_todo_id_fkey,
-ADD CONSTRAINT step_todo_id_fkey
-    FOREIGN KEY (todo_id)
-    REFERENCES todo (id)
-    ON DELETE CASCADE;

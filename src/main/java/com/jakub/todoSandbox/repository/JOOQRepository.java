@@ -1,29 +1,27 @@
 package com.jakub.todoSandbox.repository;
 
-import com.jakub.todoSandbox.jooq.sample.model.enums.PriorityEnum;
-import com.jakub.todoSandbox.jooq.sample.model.tables.records.TodoRecord;
+
 import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
 import com.jakub.todoSandbox.service.TodoService;
 import org.jooq.DSLContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import static com.jakub.todoSandbox.jooq.sample.model.tables.Todo.TODO;
-import static com.jakub.todoSandbox.jooq.sample.model.tables.Step.STEP;
+import static com.jakub.todoSandbox.jooq.tables.Todo.TODO;
+import static com.jakub.todoSandbox.jooq.tables.Step.STEP;
+import com.jakub.todoSandbox.jooq.enums.PriorityEnum;
+import com.jakub.todoSandbox.jooq.tables.records.TodoRecord;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 public class JOOQRepository implements TodoRepository {
 
-    @Autowired
     private final DSLContext context;
-
     private final TodoService todoService;
 
     public JOOQRepository(TodoService todoService, DSLContext context) {
@@ -56,14 +54,18 @@ public class JOOQRepository implements TodoRepository {
     @Override
     public List<Todo> findAllTodos() {
         System.out.println("findAllTodos() method call");
-        return todoService.sortByPriority(context.selectFrom(TODO)
+        Comparator<Todo> priorityComparator = Comparator.comparing(Todo::priority);
+        return context.selectFrom(TODO)
                 .fetch()
                 .map(record -> Todo.builder(record.getName())
                         .id(record.getId())
                         .description(record.getDescription())
                         .priority(Priority.valueOf(record.getPriority().name()))
                         .steps(fetchSteps(record.getId()))
-                        .build()));
+                        .build())
+                .stream()
+                .sorted(priorityComparator)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -103,7 +105,7 @@ public class JOOQRepository implements TodoRepository {
 
     @Transactional
     @Override
-    public void updateTodo(Long todoId, Todo todo) throws ValidationException {
+    public void updateTodo(long todoId, Todo todo) throws ValidationException {
         System.out.println("updateTodo() method call");
         if (context.selectFrom(TODO).where(TODO.ID.eq(todoId)).fetchOne() != null) {
             var updatedRecord = context.update(TODO)
@@ -125,7 +127,7 @@ public class JOOQRepository implements TodoRepository {
 
     @Transactional
     @Override
-    public Optional<Todo> deleteTodo(Long todoId) {
+    public Optional<Todo> deleteTodo(long todoId) {
         Optional<Todo> deletedTodo = findTodoById(todoId);
         if (deletedTodo.isPresent()) {
             context.delete(TODO)
@@ -138,7 +140,7 @@ public class JOOQRepository implements TodoRepository {
 
     @Transactional
     @Override
-    public void saveSteps(Long todoId, List<Step> createdSteps) throws ValidationException {
+    public void saveSteps(long todoId, List<Step> createdSteps) throws ValidationException {
         System.out.println("saveSteps() method called with todoId: {" + todoId + "].");
         Todo doesTodoExist = findTodoById(todoId)
                 .orElseThrow(() -> new ValidationException("Todo with id " + todoId + " not found"));
@@ -164,7 +166,7 @@ public class JOOQRepository implements TodoRepository {
 
     @Transactional
     @Override
-    public void updateStep(Long todoId, Step updatedStep) throws ValidationException {
+    public void updateStep(long todoId, Step updatedStep) throws ValidationException {
         System.out.println("updateStep() method called with todoId: " + todoId);
 
         Todo todoToUpdate = findTodoById(todoId)
@@ -197,7 +199,7 @@ public class JOOQRepository implements TodoRepository {
 
     @Transactional
     @Override
-    public void deleteSteps(Long todoId, List<Long> stepIds) throws ValidationException {
+    public void deleteSteps(long todoId, List<Long> stepIds) throws ValidationException {
         System.out.println("deleteSteps() method called with todoId: {" + todoId + "}.");
 
         Todo doesTodoExist = findTodoById(todoId)
@@ -228,7 +230,7 @@ public class JOOQRepository implements TodoRepository {
         }
     }
 
-    private List<Step> fetchSteps(Long todoId) {
+    private List<Step> fetchSteps(long todoId) {
         return context.selectFrom(STEP)
                 .where(STEP.TODO_ID.eq(todoId))
                 .fetch()
@@ -236,8 +238,7 @@ public class JOOQRepository implements TodoRepository {
                         new Step(
                                 stepRecord.getId(),
                                 stepRecord.getName(),
-                                stepRecord.getDescription(),
-                                stepRecord.getTodoId()
+                                stepRecord.getDescription()
                         ));
     }
 }

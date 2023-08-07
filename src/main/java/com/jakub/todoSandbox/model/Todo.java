@@ -2,7 +2,7 @@ package com.jakub.todoSandbox.model;
 
 import java.util.List;
 
-public record Todo (Long id, String name, String description, Priority priority, List<Step> steps){
+public record Todo (long id, String name, String description, Priority priority, List<Step> steps){
 
 
     public static Builder builder(String name) {
@@ -10,7 +10,7 @@ public record Todo (Long id, String name, String description, Priority priority,
     }
 
     public static class Builder {
-        private Long id;
+        private long id;
         private String name;
         private String description;
         private Priority priority;
@@ -20,7 +20,7 @@ public record Todo (Long id, String name, String description, Priority priority,
             this.name = name;
         }
 
-        public Builder id(Long id) {
+        public Builder id(long id) {
             this.id = id;
             return this;
         }

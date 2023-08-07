@@ -56,8 +56,8 @@ public class TodoController {
     }
 
     @DeleteMapping("/{id}/steps")
-    public void deleteStep(@PathVariable("id") Long id, @RequestParam("stepIds") List<Long> stepIds) throws ValidationException{
-        todoRepository.deleteSteps(id, stepIds);
+    public void deleteStep(@PathVariable("id") Long id, @RequestParam("stepId") List<Long> stepId) throws ValidationException{
+        todoRepository.deleteSteps(id, stepId);
     }
 
     @PutMapping("/{id}/steps")
