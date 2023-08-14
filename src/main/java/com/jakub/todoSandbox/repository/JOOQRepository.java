@@ -1,11 +1,13 @@
 package com.jakub.todoSandbox.repository;
 
 
+import com.jakub.todoSandbox.jooq.tables.records.StepRecord;
 import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
 import org.jooq.DSLContext;
+import org.jooq.Result;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,18 +37,12 @@ public class JOOQRepository implements TodoRepository {
         return context.selectFrom(TODO)
                 .where(TODO.ID.eq(todoId))
                 .fetchOptional()
-                .map(record -> {
-                    List<Step> steps = context.selectFrom(STEP)
-                            .where(STEP.TODO_ID.eq(todoId))
-                            .fetchInto(Step.class);
-
-                    return Todo.builder(record.getName())
-                            .id(record.getId())
-                            .description(record.getDescription())
-                            .priority(Priority.valueOf(record.getPriority().name()))
-                            .steps(steps)
-                            .build();
-                });
+                .map(record -> Todo.builder(record.getName())
+                        .id(record.getId())
+                        .description(record.getDescription())
+                        .priority(Priority.valueOf(record.getPriority().name()))
+                        .steps(fetchSteps(record.getId()))
+                        .build());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -79,18 +75,24 @@ public class JOOQRepository implements TodoRepository {
                 .fetchOne();
 
         for (Step step : todo.steps()) {
-            assert todoRecord != null;
-            context.insertInto(STEP)
-                    .set(STEP.NAME, step.name())
-                    .set(STEP.DESCRIPTION, step.description())
-                    .set(STEP.TODO_ID, todoRecord.getId())
-                    .execute();
+            if (todoRecord != null) {
+                context.insertInto(STEP)
+                        .set(STEP.NAME, step.name())
+                        .set(STEP.DESCRIPTION, step.description())
+                        .set(STEP.TODO_ID, todoRecord.getId())
+                        .execute();
+            }
         }
 
-        assert todoRecord != null;
-        List<Step> savedSteps = context.selectFrom(STEP)
+        Result<StepRecord> savedStepRecords = context.selectFrom(STEP)
                 .where(STEP.TODO_ID.eq(todoRecord.getId()))
-                .fetchInto(Step.class);
+                .fetch();
+
+        List<Step> savedSteps = savedStepRecords.map(stepRecord -> new Step(
+                stepRecord.getId(),
+                stepRecord.getName(),
+                stepRecord.getDescription()
+        ));
 
         return Todo.builder(todoRecord.getName())
                 .description(todoRecord.getDescription())
@@ -125,38 +127,27 @@ public class JOOQRepository implements TodoRepository {
     @Transactional
     @Override
     public Optional<Todo> deleteTodo(long todoId) {
+        System.out.println("deleteTodo() method call with todoId: " + todoId + ".");
         Optional<Todo> deletedTodo = findTodoById(todoId);
         if (deletedTodo.isPresent()) {
             context.delete(TODO)
                     .where(TODO.ID.eq(todoId))
                     .execute();
         }
-        System.out.println("deleteTodo() method call with todoId: " + todoId + ".");
         return deletedTodo;
     }
 
     @Transactional
     @Override
     public void saveSteps(long todoId, List<Step> createdSteps) {
-        System.out.println("saveSteps() method called with todoId: {" + todoId + "].");
-        Todo doesTodoExist = findTodoById(todoId)
-                .orElseThrow(() -> new ValidationException("Todo with id " + todoId + " not found"));
+        System.out.println("saveSteps() method called with todoId: {" + todoId + "}.");
 
-        if (doesTodoExist != null) {
-            for (Step step : createdSteps) {
-                var addStep = context.insertInto(STEP)
-                        .set(STEP.NAME, step.name())
-                        .set(STEP.DESCRIPTION, step.description())
-                        .set(STEP.TODO_ID, doesTodoExist.id())
-                        .execute();
-
-            }
-            throw new ValidationException("You have reached the maximum number of steps of 10 for todo with id: " + doesTodoExist.id()
-                    + ", or a step has not passed the name/description validation process.");
-
-        } else {
-            throw new ValidationException("Creation of step was not possible, due to either non existing todo, " +
-                    "or the new steps have not passed the validation process.");
+        for (Step step : createdSteps) {
+            var addStep = context.insertInto(STEP)
+                    .set(STEP.NAME, step.name())
+                    .set(STEP.DESCRIPTION, step.description())
+                    .set(STEP.TODO_ID, todoId)
+                    .execute();
         }
     }
 
@@ -166,12 +157,9 @@ public class JOOQRepository implements TodoRepository {
         System.out.println("updateStep() method called with todoId: " + todoId);
 
         Todo todoToUpdate = findTodoById(todoId)
-                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: " + todoId));
+                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: {" + todoId + "}"));
 
-        boolean stepExists = todoToUpdate.steps().stream()
-                .anyMatch(step -> Objects.equals(step.id(), updatedStep.id()));
-
-        if (stepExists) {
+        if (todoToUpdate.steps().stream().anyMatch(step -> Objects.equals(step.id(), updatedStep.id()))) {
             var updatedRows = context.update(STEP)
                     .set(STEP.NAME, updatedStep.name())
                     .set(STEP.DESCRIPTION, updatedStep.description())
@@ -180,12 +168,12 @@ public class JOOQRepository implements TodoRepository {
                     .execute();
 
             if (updatedRows > 0) {
-                System.out.println("Step with stepId: " + updatedStep.id() + " has been updated");
+                System.out.println("Step with stepId: {" + updatedStep.id() + "} has been updated");
             } else {
-                throw new ValidationException("Failed to update the step with stepId: " + updatedStep.id());
+                throw new ValidationException("Failed to update the step with stepId: {" + updatedStep.id() + "}");
             }
         } else {
-            throw new ValidationException("The step to update was not found in the todo with todoId: " + todoId);
+            throw new ValidationException("The step to update was not found in the todo with todoId: {" + todoId + "}");
         }
     }
 
