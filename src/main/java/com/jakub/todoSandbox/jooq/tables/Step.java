@@ -5,7 +5,7 @@ package com.jakub.todoSandbox.jooq.tables;
 
 
 import com.jakub.todoSandbox.jooq.Keys;
-import com.jakub.todoSandbox.jooq.Tododb;
+import com.jakub.todoSandbox.jooq.Public;
 import com.jakub.todoSandbox.jooq.tables.records.StepRecord;
 
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public class Step extends TableImpl<StepRecord> {
     private static final long serialVersionUID = 1L;
 
     /**
-     * The reference instance of <code>tododb.step</code>
+     * The reference instance of <code>public.step</code>
      */
     public static final Step STEP = new Step();
 
@@ -53,22 +53,22 @@ public class Step extends TableImpl<StepRecord> {
     }
 
     /**
-     * The column <code>tododb.step.id</code>.
+     * The column <code>public.step.id</code>.
      */
     public final TableField<StepRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>tododb.step.name</code>.
+     * The column <code>public.step.name</code>.
      */
     public final TableField<StepRecord, String> NAME = createField(DSL.name("name"), SQLDataType.VARCHAR(255).nullable(false), this, "");
 
     /**
-     * The column <code>tododb.step.description</code>.
+     * The column <code>public.step.description</code>.
      */
     public final TableField<StepRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.CLOB, this, "");
 
     /**
-     * The column <code>tododb.step.todo_id</code>.
+     * The column <code>public.step.todo_id</code>.
      */
     public final TableField<StepRecord, Long> TODO_ID = createField(DSL.name("todo_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
@@ -81,21 +81,21 @@ public class Step extends TableImpl<StepRecord> {
     }
 
     /**
-     * Create an aliased <code>tododb.step</code> table reference
+     * Create an aliased <code>public.step</code> table reference
      */
     public Step(String alias) {
         this(DSL.name(alias), STEP);
     }
 
     /**
-     * Create an aliased <code>tododb.step</code> table reference
+     * Create an aliased <code>public.step</code> table reference
      */
     public Step(Name alias) {
         this(alias, STEP);
     }
 
     /**
-     * Create a <code>tododb.step</code> table reference
+     * Create a <code>public.step</code> table reference
      */
     public Step() {
         this(DSL.name("step"), null);
@@ -107,7 +107,7 @@ public class Step extends TableImpl<StepRecord> {
 
     @Override
     public Schema getSchema() {
-        return aliased() ? null : Tododb.TODODB;
+        return aliased() ? null : Public.PUBLIC;
     }
 
     @Override
@@ -128,7 +128,7 @@ public class Step extends TableImpl<StepRecord> {
     private transient Todo _todo;
 
     /**
-     * Get the implicit join path to the <code>tododb.todo</code> table.
+     * Get the implicit join path to the <code>public.todo</code> table.
      */
     public Todo todo() {
         if (_todo == null)

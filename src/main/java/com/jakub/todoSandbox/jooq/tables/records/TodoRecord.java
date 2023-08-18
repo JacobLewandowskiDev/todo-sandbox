@@ -23,56 +23,56 @@ public class TodoRecord extends UpdatableRecordImpl<TodoRecord> implements Recor
     private static final long serialVersionUID = 1L;
 
     /**
-     * Setter for <code>tododb.todo.id</code>.
+     * Setter for <code>public.todo.id</code>.
      */
     public void setId(Long value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>tododb.todo.id</code>.
+     * Getter for <code>public.todo.id</code>.
      */
     public Long getId() {
         return (Long) get(0);
     }
 
     /**
-     * Setter for <code>tododb.todo.name</code>.
+     * Setter for <code>public.todo.name</code>.
      */
     public void setName(String value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>tododb.todo.name</code>.
+     * Getter for <code>public.todo.name</code>.
      */
     public String getName() {
         return (String) get(1);
     }
 
     /**
-     * Setter for <code>tododb.todo.description</code>.
+     * Setter for <code>public.todo.description</code>.
      */
     public void setDescription(String value) {
         set(2, value);
     }
 
     /**
-     * Getter for <code>tododb.todo.description</code>.
+     * Getter for <code>public.todo.description</code>.
      */
     public String getDescription() {
         return (String) get(2);
     }
 
     /**
-     * Setter for <code>tododb.todo.priority</code>.
+     * Setter for <code>public.todo.priority</code>.
      */
     public void setPriority(PriorityEnum value) {
         set(3, value);
     }
 
     /**
-     * Getter for <code>tododb.todo.priority</code>.
+     * Getter for <code>public.todo.priority</code>.
      */
     public PriorityEnum getPriority() {
         return (PriorityEnum) get(3);

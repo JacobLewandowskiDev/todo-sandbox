@@ -5,7 +5,7 @@ package com.jakub.todoSandbox.jooq.tables;
 
 
 import com.jakub.todoSandbox.jooq.Keys;
-import com.jakub.todoSandbox.jooq.Tododb;
+import com.jakub.todoSandbox.jooq.Public;
 import com.jakub.todoSandbox.jooq.enums.PriorityEnum;
 import com.jakub.todoSandbox.jooq.tables.records.TodoRecord;
 
@@ -39,7 +39,7 @@ public class Todo extends TableImpl<TodoRecord> {
     private static final long serialVersionUID = 1L;
 
     /**
-     * The reference instance of <code>tododb.todo</code>
+     * The reference instance of <code>public.todo</code>
      */
     public static final Todo TODO = new Todo();
 
@@ -52,22 +52,22 @@ public class Todo extends TableImpl<TodoRecord> {
     }
 
     /**
-     * The column <code>tododb.todo.id</code>.
+     * The column <code>public.todo.id</code>.
      */
     public final TableField<TodoRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>tododb.todo.name</code>.
+     * The column <code>public.todo.name</code>.
      */
     public final TableField<TodoRecord, String> NAME = createField(DSL.name("name"), SQLDataType.VARCHAR(255), this, "");
 
     /**
-     * The column <code>tododb.todo.description</code>.
+     * The column <code>public.todo.description</code>.
      */
     public final TableField<TodoRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.CLOB, this, "");
 
     /**
-     * The column <code>tododb.todo.priority</code>.
+     * The column <code>public.todo.priority</code>.
      */
     public final TableField<TodoRecord, PriorityEnum> PRIORITY = createField(DSL.name("priority"), SQLDataType.VARCHAR.asEnumDataType(com.jakub.todoSandbox.jooq.enums.PriorityEnum.class), this, "");
 
@@ -80,21 +80,21 @@ public class Todo extends TableImpl<TodoRecord> {
     }
 
     /**
-     * Create an aliased <code>tododb.todo</code> table reference
+     * Create an aliased <code>public.todo</code> table reference
      */
     public Todo(String alias) {
         this(DSL.name(alias), TODO);
     }
 
     /**
-     * Create an aliased <code>tododb.todo</code> table reference
+     * Create an aliased <code>public.todo</code> table reference
      */
     public Todo(Name alias) {
         this(alias, TODO);
     }
 
     /**
-     * Create a <code>tododb.todo</code> table reference
+     * Create a <code>public.todo</code> table reference
      */
     public Todo() {
         this(DSL.name("todo"), null);
@@ -106,7 +106,7 @@ public class Todo extends TableImpl<TodoRecord> {
 
     @Override
     public Schema getSchema() {
-        return aliased() ? null : Tododb.TODODB;
+        return aliased() ? null : Public.PUBLIC;
     }
 
     @Override

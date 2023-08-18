@@ -23,7 +23,7 @@
         <profile>
             <id>dev</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
                 <jdbc.driver>${env.JDBC_DRIVER}</jdbc.driver>
@@ -115,7 +115,7 @@
 
                     <generator>
                         <database>
-                            <inputSchema>tododb</inputSchema>
+                            <inputSchema>public</inputSchema>
                         </database>
 
                         <target>

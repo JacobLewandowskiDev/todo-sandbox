@@ -1,15 +1,14 @@
 package com.jakub.todoSandbox.repository;
 
 
-import com.jakub.todoSandbox.jooq.tables.records.StepRecord;
 import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
 import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.jooq.Result;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.jakub.todoSandbox.jooq.tables.Todo.TODO;
@@ -30,43 +29,71 @@ public class JOOQRepository implements TodoRepository {
         this.context = context;
     }
 
-    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     @Override
     public Optional<Todo> findTodoById(long todoId) {
-        System.out.println("findTodoById() method call with todoId: {" + todoId + "}.");
-        return context.selectFrom(TODO)
+        var record = context.select()
+                .from(TODO)
                 .where(TODO.ID.eq(todoId))
-                .fetchOptional()
-                .map(record -> Todo.builder(record.getName())
-                        .id(record.getId())
-                        .description(record.getDescription())
-                        .priority(Priority.valueOf(record.getPriority().name()))
-                        .steps(fetchSteps(record.getId()))
-                        .build());
+                .fetchOne();
+
+        return Optional.ofNullable(record)
+                .map(r -> {
+                    TodoRecord todoRecord = r.into(TODO);
+                    List<Step> steps = context.select(STEP.ID, STEP.NAME, STEP.DESCRIPTION)
+                            .from(STEP)
+                            .where(STEP.TODO_ID.eq(todoId))
+                            .fetch()
+                            .map(stepRecord -> new Step(
+                                    stepRecord.get(STEP.ID),
+                                    stepRecord.get(STEP.NAME),
+                                    stepRecord.get(STEP.DESCRIPTION)
+                            ));
+
+                    return Todo.builder(todoRecord.getName())
+                            .id(todoRecord.getId())
+                            .description(todoRecord.getDescription())
+                            .priority(Priority.valueOf(todoRecord.getPriority().name()))
+                            .steps(steps)
+                            .build();
+                });
     }
 
-    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     @Override
     public List<Todo> findAllTodos() {
-        System.out.println("findAllTodos() method call");
-        Comparator<Todo> priorityComparator = Comparator.comparing(Todo::priority);
-        return context.selectFrom(TODO)
-                .fetch()
-                .map(record -> Todo.builder(record.getName())
-                        .id(record.getId())
-                        .description(record.getDescription())
-                        .priority(Priority.valueOf(record.getPriority().name()))
-                        .steps(fetchSteps(record.getId()))
+        Result<Record> result = context.select()
+                .from(TODO)
+                .leftOuterJoin(STEP).on(TODO.ID.eq(STEP.TODO_ID))
+                .orderBy(TODO.PRIORITY.desc())
+                .fetch();
+
+        Map<Long, List<Step>> todoStepsMap = new HashMap<>();
+
+        for (Record record : result) {
+            Long todoId = record.get(TODO.ID);
+
+            Long stepId = record.get(STEP.ID);
+            if (stepId != null) {
+                todoStepsMap.computeIfAbsent(todoId, k -> new ArrayList<>()).add(new Step(
+                        stepId,
+                        record.get(STEP.NAME),
+                        record.get(STEP.DESCRIPTION)
+                ));
+            }
+        }
+
+        return result.stream()
+                .map(record -> Todo.builder(record.get(TODO.NAME))
+                        .id(record.get(TODO.ID))
+                        .description(record.get(TODO.DESCRIPTION))
+                        .priority(Priority.valueOf(record.get(TODO.PRIORITY).name()))
+                        .steps(todoStepsMap.getOrDefault(record.get(TODO.ID), new ArrayList<>()))
                         .build())
-                .stream()
-                .sorted(priorityComparator)
                 .collect(Collectors.toList());
     }
 
     @Transactional
     @Override
     public Todo saveTodo(Todo todo) {
-        System.out.println("saveTodo() method call");
         TodoRecord todoRecord = context.insertInto(TODO)
                 .set(TODO.NAME, todo.name())
                 .set(TODO.DESCRIPTION, todo.description())
@@ -74,60 +101,50 @@ public class JOOQRepository implements TodoRepository {
                 .returning()
                 .fetchOne();
 
-        for (Step step : todo.steps()) {
-            if (todoRecord != null) {
-                context.insertInto(STEP)
-                        .set(STEP.NAME, step.name())
-                        .set(STEP.DESCRIPTION, step.description())
-                        .set(STEP.TODO_ID, todoRecord.getId())
-                        .execute();
-            }
+        if (todoRecord != null) {
+            todo.steps().forEach(step -> context.insertInto(STEP)
+                    .set(STEP.NAME, step.name())
+                    .set(STEP.DESCRIPTION, step.description())
+                    .set(STEP.TODO_ID, todoRecord.getId())
+                    .execute());
         }
 
-        Result<StepRecord> savedStepRecords = context.selectFrom(STEP)
+        List<Step> savedSteps = context.selectFrom(STEP)
                 .where(STEP.TODO_ID.eq(todoRecord.getId()))
-                .fetch();
-
-        List<Step> savedSteps = savedStepRecords.map(stepRecord -> new Step(
-                stepRecord.getId(),
-                stepRecord.getName(),
-                stepRecord.getDescription()
-        ));
+                .fetch()
+                .map(stepRecord -> new Step(
+                        stepRecord.getId(),
+                        stepRecord.getName(),
+                        stepRecord.getDescription()))
+                .stream().toList();
 
         return Todo.builder(todoRecord.getName())
+                .id(todoRecord.getId())
                 .description(todoRecord.getDescription())
                 .priority(Priority.valueOf(todoRecord.getPriority().name()))
                 .steps(savedSteps)
                 .build();
-
     }
 
     @Transactional
     @Override
     public void updateTodo(long todoId, Todo todo) {
-        System.out.println("updateTodo() method call");
-        if (context.selectFrom(TODO).where(TODO.ID.eq(todoId)).fetchOne() != null) {
-            var updatedRecord = context.update(TODO)
-                    .set(TODO.NAME, todo.name())
-                    .set(TODO.DESCRIPTION, todo.description())
-                    .set(TODO.PRIORITY, PriorityEnum.valueOf(todo.priority().name()))
-                    .where(TODO.ID.eq(todoId))
-                    .execute();
+        var updatedRecord = context.update(TODO)
+                .set(TODO.NAME, todo.name())
+                .set(TODO.DESCRIPTION, todo.description())
+                .set(TODO.PRIORITY, PriorityEnum.valueOf(todo.priority().name()))
+                .where(TODO.ID.eq(todoId))
+                .execute();
 
-            if (updatedRecord > 0) {
-                System.out.println("Todo using todoId: {" + todoId + "} has been updated.");
-            } else {
-                throw new ValidationException("Update operation failed for todo with todoId: {" + todoId + "}");
-            }
+        if (updatedRecord > 0) {
+            System.out.println("Todo using todoId: {" + todoId + "} has been updated.");
         } else {
-            throw new ValidationException("No todo exists under todoId: {" + todoId + "}");
+            throw new ValidationException("Update operation failed for todo with todoId: {" + todoId + "}");
         }
     }
 
-    @Transactional
     @Override
     public Optional<Todo> deleteTodo(long todoId) {
-        System.out.println("deleteTodo() method call with todoId: " + todoId + ".");
         Optional<Todo> deletedTodo = findTodoById(todoId);
         if (deletedTodo.isPresent()) {
             context.delete(TODO)
@@ -137,11 +154,10 @@ public class JOOQRepository implements TodoRepository {
         return deletedTodo;
     }
 
+    //TODO - FIX saveTodo() -> After running this method and calling findAllTodos() causes duplication bug, (Look into findAllTodos())
     @Transactional
     @Override
     public void saveSteps(long todoId, List<Step> createdSteps) {
-        System.out.println("saveSteps() method called with todoId: {" + todoId + "}.");
-
         for (Step step : createdSteps) {
             var addStep = context.insertInto(STEP)
                     .set(STEP.NAME, step.name())
@@ -154,12 +170,10 @@ public class JOOQRepository implements TodoRepository {
     @Transactional
     @Override
     public void updateStep(long todoId, Step updatedStep) {
-        System.out.println("updateStep() method called with todoId: " + todoId);
-
-        Todo todoToUpdate = findTodoById(todoId)
+        Todo todoToBeUpdated = findTodoById(todoId)
                 .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: {" + todoId + "}"));
 
-        if (todoToUpdate.steps().stream().anyMatch(step -> Objects.equals(step.id(), updatedStep.id()))) {
+        if (todoToBeUpdated.steps().stream().anyMatch(step -> Objects.equals(step.id(), updatedStep.id()))) {
             var updatedRows = context.update(STEP)
                     .set(STEP.NAME, updatedStep.name())
                     .set(STEP.DESCRIPTION, updatedStep.description())
@@ -177,48 +191,13 @@ public class JOOQRepository implements TodoRepository {
         }
     }
 
-    @Transactional
     @Override
     public void deleteSteps(long todoId, List<Long> stepIds) {
-        System.out.println("deleteSteps() method called with todoId: {" + todoId + "}.");
-
-        Todo doesTodoExist = findTodoById(todoId)
-                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: {" + todoId + "}."));
-
-        if (doesTodoExist != null) {
-            for (long stepId : stepIds) {
-                boolean stepExists = doesTodoExist.steps().stream()
-                        .anyMatch(step -> Objects.equals(step.id(), stepId));
-
-                if (stepExists) {
-                    var deletedRows = context.deleteFrom(STEP)
-                            .where(STEP.ID.eq(stepId))
-                            .and(STEP.TODO_ID.eq(todoId))
-                            .execute();
-
-                    if (deletedRows > 0) {
-                        System.out.println("Step with stepId: {" + stepId + "} was removed.");
-                    } else {
-                        throw new ValidationException("Failed to delete the step with stepId: {" + stepId + "}.");
-                    }
-                } else {
-                    throw new ValidationException("The step with stepId: {" + stepId + "} does not exist in the todo with todoId: {" + todoId + "}.");
-                }
-            }
-        } else {
-            throw new ValidationException("Todo with the provided id does not exist.");
+        for (long stepId : stepIds) {
+            context.deleteFrom(STEP)
+                    .where(STEP.ID.eq(stepId))
+                    .and(STEP.TODO_ID.eq(todoId))
+                    .execute();
         }
-    }
-
-    private List<Step> fetchSteps(long todoId) {
-        return context.selectFrom(STEP)
-                .where(STEP.TODO_ID.eq(todoId))
-                .fetch()
-                .map(stepRecord ->
-                        new Step(
-                                stepRecord.getId(),
-                                stepRecord.getName(),
-                                stepRecord.getDescription()
-                        ));
     }
 }

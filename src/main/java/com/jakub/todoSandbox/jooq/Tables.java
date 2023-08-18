@@ -9,18 +9,18 @@ import com.jakub.todoSandbox.jooq.tables.Todo;
 
 
 /**
- * Convenience access to all tables in tododb.
+ * Convenience access to all tables in public.
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
 
     /**
-     * The table <code>tododb.step</code>.
+     * The table <code>public.step</code>.
      */
     public static final Step STEP = Step.STEP;
 
     /**
-     * The table <code>tododb.todo</code>.
+     * The table <code>public.todo</code>.
      */
     public static final Todo TODO = Todo.TODO;
 }

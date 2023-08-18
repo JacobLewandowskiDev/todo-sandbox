@@ -4,7 +4,7 @@
 package com.jakub.todoSandbox.jooq.enums;
 
 
-import com.jakub.todoSandbox.jooq.Tododb;
+import com.jakub.todoSandbox.jooq.Public;
 
 import org.jooq.Catalog;
 import org.jooq.EnumType;
@@ -36,7 +36,7 @@ public enum PriorityEnum implements EnumType {
 
     @Override
     public Schema getSchema() {
-        return Tododb.TODODB;
+        return Public.PUBLIC;
     }
 
     @Override
