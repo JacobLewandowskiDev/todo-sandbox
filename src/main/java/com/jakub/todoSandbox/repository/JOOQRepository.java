@@ -1,19 +1,15 @@
 package com.jakub.todoSandbox.repository;
 
-
 import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
 import org.jooq.DSLContext;
 import org.jooq.Record;
-import org.jooq.Result;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
 import static com.jakub.todoSandbox.jooq.tables.Todo.TODO;
 import static com.jakub.todoSandbox.jooq.tables.Step.STEP;
-
 import com.jakub.todoSandbox.jooq.enums.PriorityEnum;
 import com.jakub.todoSandbox.jooq.tables.records.TodoRecord;
 
@@ -60,36 +56,20 @@ public class JOOQRepository implements TodoRepository {
 
     @Override
     public List<Todo> findAllTodos() {
-        Result<Record> result = context.select()
+        List<Record> result = context.select()
                 .from(TODO)
-                .leftOuterJoin(STEP).on(TODO.ID.eq(STEP.TODO_ID))
                 .orderBy(TODO.PRIORITY.desc())
                 .fetch();
-
-        Map<Long, List<Step>> todoStepsMap = new HashMap<>();
-
-        for (Record record : result) {
-            Long todoId = record.get(TODO.ID);
-
-            Long stepId = record.get(STEP.ID);
-            if (stepId != null) {
-                todoStepsMap.computeIfAbsent(todoId, k -> new ArrayList<>()).add(new Step(
-                        stepId,
-                        record.get(STEP.NAME),
-                        record.get(STEP.DESCRIPTION)
-                ));
-            }
-        }
 
         return result.stream()
                 .map(record -> Todo.builder(record.get(TODO.NAME))
                         .id(record.get(TODO.ID))
-                        .description(record.get(TODO.DESCRIPTION))
                         .priority(Priority.valueOf(record.get(TODO.PRIORITY).name()))
-                        .steps(todoStepsMap.getOrDefault(record.get(TODO.ID), new ArrayList<>()))
                         .build())
                 .collect(Collectors.toList());
     }
+
+
 
     @Transactional
     @Override
@@ -154,7 +134,6 @@ public class JOOQRepository implements TodoRepository {
         return deletedTodo;
     }
 
-    //TODO - FIX saveTodo() -> After running this method and calling findAllTodos() causes duplication bug, (Look into findAllTodos())
     @Transactional
     @Override
     public void saveSteps(long todoId, List<Step> createdSteps) {
