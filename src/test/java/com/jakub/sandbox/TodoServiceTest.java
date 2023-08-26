@@ -20,7 +20,6 @@ public class TodoServiceTest {
 
     private final TodoRepository todoRepositoryMock = mock(TodoRepository.class);
     private final TodoService todoService = new TodoService(todoRepositoryMock);
-    private final int MAX_NUM_OF_STEPS = 10;
 
     @Test
     void validateNameAndDesc_CorrectNameAndDesc() {
@@ -79,10 +78,28 @@ public class TodoServiceTest {
         Todo todoMock = new Todo(todoId,"Todo", "Description", Priority.LOW, steps);
         Step step = mock(Step.class);
         List<Step> addSteps = new ArrayList<>();
+        int MAX_NUM_OF_STEPS = 10;
         for (int i = 0; i < MAX_NUM_OF_STEPS + 1; i++) {
             addSteps.add(step);
         }
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
         assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoMock.id(),addSteps));
+    }
+
+    @Test
+    void findTodoById_ValidTodoId() {
+        long todoId = 1L;
+        List<Step> steps = new ArrayList<>();
+        Todo todoMock = new Todo(todoId, "Todo", "Description", Priority.HIGH, steps);
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
+        assertDoesNotThrow(() -> todoService.findTodoById(todoId));
+    }
+
+    @Test
+    void findTodoById_InvalidTodoId() {
+        long todoId = 1L;
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.empty());
+        Optional<Todo> result = todoService.findTodoById(todoId);
+        assertTrue(result.isEmpty());
     }
 }
