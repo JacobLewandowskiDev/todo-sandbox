@@ -7,6 +7,7 @@ import com.jakub.todoSandbox.repository.TodoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -63,8 +64,16 @@ public class TodoService {
 
     public void updateStep(long todoId, Step updatedStep) {
         System.out.println("updateStep() method called with todoId: " + todoId);
-        validateNameAndDesc(updatedStep.name(), updatedStep.description());
-        todoRepository.updateStep(todoId, updatedStep);
+        Todo todoToBeUpdated = findTodoById(todoId)
+                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: {" + todoId + "}"));
+
+        if (todoToBeUpdated.steps().stream().anyMatch(step -> Objects.equals(step.id(), updatedStep.id()))) {
+            validateNameAndDesc(updatedStep.name(), updatedStep.description());
+            todoRepository.updateStep(todoId, updatedStep);
+
+        } else {
+            throw new ValidationException("The step to update was not found in the todo with todoId: {" + todoId + "}");
+        }
     }
 
     public void deleteSteps(long todoId, List<Long> stepIds) {

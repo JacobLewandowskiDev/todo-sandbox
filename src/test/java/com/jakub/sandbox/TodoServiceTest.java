@@ -55,52 +55,50 @@ public class TodoServiceTest {
     @Test
     void canAddStepsToTodo_ValidSteps() {
         long todoId = 1L;
-        List<Step> steps = new ArrayList<>();
-        Todo todoMock = new Todo(todoId, "Todo", "Description", Priority.LOW, steps);
+        Todo existingTodo = new Todo(todoId, "Todo", "Description", Priority.LOW, new ArrayList<>());
         List<Step> addSteps = new ArrayList<>();
 
-        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
-        assertDoesNotThrow(() -> todoService.canAddStepsToTodo(todoMock.id(), addSteps));
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        assertDoesNotThrow(() -> todoService.canAddStepsToTodo(existingTodo.id(), addSteps));
     }
 
     @Test
     void canAddStepsToTodo_NullTodo() {
         long todoId = 1L;
-        List<Step> steps = new ArrayList<>();
 
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.empty());
-        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoId, steps));
+        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoId, new ArrayList<>()));
     }
 
     @Test
     void canAddStepsToTodo_ExceededNumberOfSteps() {
         long todoId = 1L;
         List<Step> steps = new ArrayList<>();
-
-        Todo todoMock = new Todo(todoId, "Todo", "Description", Priority.LOW, steps);
+        Todo existingTodo = new Todo(todoId, "Todo", "Description", Priority.LOW, steps);
         Step step = mock(Step.class);
         List<Step> addSteps = new ArrayList<>();
         int MAX_NUM_OF_STEPS = 10;
         for (int i = 0; i < MAX_NUM_OF_STEPS + 1; i++) {
             addSteps.add(step);
         }
-        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
-        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoMock.id(), addSteps));
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(existingTodo.id(), addSteps));
     }
 
     @Test
     void findTodoById_ValidTodoId() {
         long todoId = 1L;
-        List<Step> steps = new ArrayList<>();
-        Todo todoMock = new Todo(todoId, "Todo", "Description", Priority.HIGH, steps);
+        Todo existingTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
 
-        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
         assertDoesNotThrow(() -> todoService.findTodoById(todoId));
     }
 
     @Test
     void findTodoById_InvalidTodoId() {
         long todoId = 1L;
+
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.empty());
         Optional<Todo> result = todoService.findTodoById(todoId);
 
@@ -110,9 +108,8 @@ public class TodoServiceTest {
     @Test
     void findAllTodos_ValidTodoList() {
         List<Todo> mockTodoList = new ArrayList<Todo>();
-        List<Step> steps = new ArrayList<>();
-        Todo todo1 = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
-        Todo todo2 = new Todo(2L, "Todo2", "Description2", Priority.HIGH, steps);
+        Todo todo1 = new Todo(1L, "Todo1", "Description1", Priority.LOW, new ArrayList<>());
+        Todo todo2 = new Todo(2L, "Todo2", "Description2", Priority.HIGH, new ArrayList<>());
         mockTodoList.add(todo1);
         mockTodoList.add(todo2);
 
@@ -136,10 +133,10 @@ public class TodoServiceTest {
     @Test
     void saveTodo_ValidTodoWithSteps() {
         List<Step> steps = new ArrayList<>();
-        Step mockStep1 = new Step(1L, "Step1", "Desc1");
-        Step mockStep2 = new Step(1L, "Step2", "Desc2");
-        steps.add(mockStep1);
-        steps.add(mockStep2);
+        Step step1 = new Step(1L, "Step1", "Desc1");
+        Step step2 = new Step(1L, "Step2", "Desc2");
+        steps.add(step1);
+        steps.add(step2);
         Todo validTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
 
         when(todoRepositoryMock.saveTodo(any(Todo.class))).thenReturn(validTodo);
@@ -151,7 +148,7 @@ public class TodoServiceTest {
         assertEquals("Todo1", validTodo.name());
         assertEquals("Description1", validTodo.description());
         assertEquals(Priority.LOW, validTodo.priority());
-        assertEquals(2,validTodo.steps().size());
+        assertEquals(2, validTodo.steps().size());
         assertEquals("Step1", validTodo.steps().get(0).name());
         assertEquals("Desc1", validTodo.steps().get(0).description());
         assertEquals("Step2", validTodo.steps().get(1).name());
@@ -173,13 +170,12 @@ public class TodoServiceTest {
         assertEquals("Todo1", validTodo.name());
         assertEquals("Description1", validTodo.description());
         assertEquals(Priority.LOW, validTodo.priority());
-        assertEquals(0,validTodo.steps().size());
+        assertEquals(0, validTodo.steps().size());
     }
 
     @Test
     void saveTodo_InvalidTodo() {
-        List<Step> steps = new ArrayList<>();
-        Todo invalidTodo = new Todo(1L, "A".repeat(101), "Description1", Priority.LOW, steps);
+        Todo invalidTodo = new Todo(1L, "A".repeat(101), "Description1", Priority.LOW, new ArrayList<>());
 
         assertThrows(ValidationException.class, () -> todoService.saveTodo(invalidTodo));
         verify(todoRepositoryMock, never()).saveTodo(any());
@@ -187,6 +183,136 @@ public class TodoServiceTest {
 
     @Test
     void updateTodo_ValidTodo() {
+        long todoId = 1L;
+        Todo existingTodo = new Todo(todoId, "Valid Todo", "Description", Priority.LOW, new ArrayList<>());
+        Todo updatedTodo = new Todo(todoId, "New Todo name", "New Description", Priority.HIGH, new ArrayList<>());
 
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        doNothing().when(todoRepositoryMock).updateTodo(todoId, updatedTodo);
+        assertDoesNotThrow(() -> todoService.updateTodo(todoId, updatedTodo));
+        verify(todoRepositoryMock).updateTodo(todoId, updatedTodo);
+    }
+
+    @Test
+    void updateTodo_InvalidTodo() {
+        long todoId = 1L;
+        Todo updatedTodo = new Todo(todoId, "New Todo name", "New Description", Priority.HIGH, new ArrayList<>());
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class, () -> todoService.updateTodo(todoId, updatedTodo));
+        verify(todoRepositoryMock, never()).updateTodo(anyLong(), any(Todo.class));
+    }
+
+    @Test
+    void deleteTodo() {
+        long todoId = 1L;
+        Todo existingTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
+
+        when(todoRepositoryMock.deleteTodo(todoId)).thenReturn(Optional.of(existingTodo));
+        assertEquals(Optional.of(existingTodo), todoService.deleteTodo(todoId));
+        verify(todoRepositoryMock).deleteTodo(todoId);
+    }
+
+
+    @Test
+    void saveSteps_ValidSteps() {
+        long todoId = 1L;
+        Todo existingTodo = mock(Todo.class);
+        List<Step> stepsToBeSaved = new ArrayList<>();
+        int MAX_NUM_OF_STEPS = 10;
+        long stepId = 0L;
+        for (int i = 0; i < MAX_NUM_OF_STEPS; i++) {
+            stepId += 1L;
+            Step step = new Step(stepId, "step" + i, "Desc" + i);
+            stepsToBeSaved.add(step);
+        }
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        todoService.saveSteps(todoId, stepsToBeSaved);
+        verify(todoRepositoryMock).saveSteps(todoId, stepsToBeSaved);
+    }
+
+    @Test
+    void saveSteps_InvalidSteps() {
+        long todoId = 1L;
+        Todo existingTodo = mock(Todo.class);
+        List<Step> stepsToBeSaved = new ArrayList<>();
+        Step invalidStep = new Step(1L, "Invalid_StepName!@", "Description");
+        stepsToBeSaved.add(invalidStep);
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        assertThrows(ValidationException.class, () -> todoService.saveSteps(todoId, stepsToBeSaved));
+        verify(todoRepositoryMock, never()).saveSteps(todoId, stepsToBeSaved);
+    }
+
+    @Test
+    void saveSteps_ExceededNumberOfSteps() {
+        long todoId = 1L;
+        Todo existingTodo = mock(Todo.class);
+        List<Step> stepsToBeSaved = new ArrayList<>();
+        int MAX_NUM_OF_STEPS = 10;
+
+        for (int i = 0; i <= MAX_NUM_OF_STEPS; i++) {
+            Step mockStep = mock(Step.class);
+            stepsToBeSaved.add(mockStep);
+        }
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        assertThrows(ValidationException.class, () -> todoService.saveSteps(todoId, stepsToBeSaved));
+        verify(todoRepositoryMock, never()).saveSteps(todoId, stepsToBeSaved);
+    }
+
+    @Test
+    void updateStep_ValidStep() {
+        long todoId = 1L;
+        List<Step> existingSteps = new ArrayList<>();
+        Step existingStep = new Step(1L, "Old Step name", "Old step description");
+        Step updatedStep = new Step(1L, "Updated Step name", "Updated step description");
+
+        existingSteps.add(existingStep);
+        Todo existingTodo = new Todo(todoId, "Name", "Description", Priority.LOW, existingSteps);
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        doNothing().when(todoRepositoryMock).updateStep(todoId, updatedStep);
+        assertDoesNotThrow(() -> todoService.updateStep(todoId, updatedStep));
+        verify(todoRepositoryMock, times(1)).updateStep(todoId, updatedStep);
+    }
+
+    @Test
+    void updateStep_TodoNotFound() {
+        long todoId = 1L;
+        Step updatedStep = new Step(1L, "Updated Step name", "Updated step description");
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class, () -> todoService.updateStep(todoId, updatedStep));
+        verify(todoRepositoryMock, never()).updateStep(anyLong(), any(Step.class));
+    }
+
+    @Test
+    void updateStep_StepNotFoundInTodo() {
+        long todoId = 1L;
+        Step existingStep = new Step(1L, "Updated Step name", "Updated step description");
+        Step updatedStep = new Step(2L, "Updated Step name", "Updated step description");
+        List<Step> steps = new ArrayList<>();
+        steps.add(existingStep);
+        Todo existingTodo = new Todo(todoId, "Name", "Description", Priority.LOW, steps);
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        assertThrows(ValidationException.class, () -> todoService.updateStep(todoId, updatedStep));
+        verify(todoRepositoryMock, never()).updateStep(todoId, updatedStep);
+    }
+
+    @Test
+    void deleteSteps() {
+        long todoId = 1L;
+        List<Long> stepIds = List.of(1L, 2L);
+        Todo existingTodo = new Todo(
+                todoId, "Todo", "Description", Priority.HIGH,
+                List.of(new Step(1L, "Name 1", "Description"), new Step(2L, "Name 2", "Description"))
+        );
+
+        when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(existingTodo));
+        todoService.deleteSteps(todoId, stepIds);
+        verify(todoRepositoryMock).deleteSteps(todoId, stepIds);
     }
 }

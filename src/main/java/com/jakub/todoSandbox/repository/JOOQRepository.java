@@ -8,8 +8,10 @@ import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
 import static com.jakub.todoSandbox.jooq.tables.Todo.TODO;
 import static com.jakub.todoSandbox.jooq.tables.Step.STEP;
+
 import com.jakub.todoSandbox.jooq.enums.PriorityEnum;
 import com.jakub.todoSandbox.jooq.tables.records.TodoRecord;
 
@@ -68,7 +70,6 @@ public class JOOQRepository implements TodoRepository {
                         .build())
                 .collect(Collectors.toList());
     }
-
 
 
     @Transactional
@@ -149,24 +150,16 @@ public class JOOQRepository implements TodoRepository {
     @Transactional
     @Override
     public void updateStep(long todoId, Step updatedStep) {
-        Todo todoToBeUpdated = findTodoById(todoId)
-                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: {" + todoId + "}"));
-
-        if (todoToBeUpdated.steps().stream().anyMatch(step -> Objects.equals(step.id(), updatedStep.id()))) {
-            var updatedRows = context.update(STEP)
-                    .set(STEP.NAME, updatedStep.name())
-                    .set(STEP.DESCRIPTION, updatedStep.description())
-                    .where(STEP.ID.eq(updatedStep.id()))
-                    .and(STEP.TODO_ID.eq(todoId))
-                    .execute();
-
-            if (updatedRows > 0) {
-                System.out.println("Step with stepId: {" + updatedStep.id() + "} has been updated");
-            } else {
-                throw new ValidationException("Failed to update the step with stepId: {" + updatedStep.id() + "}");
-            }
+        var updatedRows = context.update(STEP)
+                .set(STEP.NAME, updatedStep.name())
+                .set(STEP.DESCRIPTION, updatedStep.description())
+                .where(STEP.ID.eq(updatedStep.id()))
+                .and(STEP.TODO_ID.eq(todoId))
+                .execute();
+        if (updatedRows > 0) {
+            System.out.println("Step with stepId: {" + updatedStep.id() + "} has been updated");
         } else {
-            throw new ValidationException("The step to update was not found in the todo with todoId: {" + todoId + "}");
+            throw new ValidationException("Failed to update the step with stepId: {" + updatedStep.id() + "}");
         }
     }
 
