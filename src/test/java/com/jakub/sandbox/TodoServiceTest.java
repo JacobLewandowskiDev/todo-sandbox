@@ -9,12 +9,13 @@ import com.jakub.todoSandbox.service.TodoService;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 public class TodoServiceTest {
 
@@ -55,10 +56,11 @@ public class TodoServiceTest {
     void canAddStepsToTodo_ValidSteps() {
         long todoId = 1L;
         List<Step> steps = new ArrayList<>();
-        Todo todoMock = new Todo(todoId,"Todo", "Description", Priority.LOW, steps);
+        Todo todoMock = new Todo(todoId, "Todo", "Description", Priority.LOW, steps);
         List<Step> addSteps = new ArrayList<>();
+
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
-        assertDoesNotThrow(() -> todoService.canAddStepsToTodo(todoMock.id(),addSteps));
+        assertDoesNotThrow(() -> todoService.canAddStepsToTodo(todoMock.id(), addSteps));
     }
 
     @Test
@@ -67,7 +69,7 @@ public class TodoServiceTest {
         List<Step> steps = new ArrayList<>();
 
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.empty());
-        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoId,steps));
+        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoId, steps));
     }
 
     @Test
@@ -75,7 +77,7 @@ public class TodoServiceTest {
         long todoId = 1L;
         List<Step> steps = new ArrayList<>();
 
-        Todo todoMock = new Todo(todoId,"Todo", "Description", Priority.LOW, steps);
+        Todo todoMock = new Todo(todoId, "Todo", "Description", Priority.LOW, steps);
         Step step = mock(Step.class);
         List<Step> addSteps = new ArrayList<>();
         int MAX_NUM_OF_STEPS = 10;
@@ -83,7 +85,7 @@ public class TodoServiceTest {
             addSteps.add(step);
         }
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
-        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoMock.id(),addSteps));
+        assertThrows(ValidationException.class, () -> todoService.canAddStepsToTodo(todoMock.id(), addSteps));
     }
 
     @Test
@@ -91,6 +93,7 @@ public class TodoServiceTest {
         long todoId = 1L;
         List<Step> steps = new ArrayList<>();
         Todo todoMock = new Todo(todoId, "Todo", "Description", Priority.HIGH, steps);
+
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.of(todoMock));
         assertDoesNotThrow(() -> todoService.findTodoById(todoId));
     }
@@ -100,6 +103,90 @@ public class TodoServiceTest {
         long todoId = 1L;
         when(todoRepositoryMock.findTodoById(todoId)).thenReturn(Optional.empty());
         Optional<Todo> result = todoService.findTodoById(todoId);
+
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findAllTodos_ValidTodoList() {
+        List<Todo> mockTodoList = new ArrayList<Todo>();
+        List<Step> steps = new ArrayList<>();
+        Todo todo1 = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
+        Todo todo2 = new Todo(2L, "Todo2", "Description2", Priority.HIGH, steps);
+        mockTodoList.add(todo1);
+        mockTodoList.add(todo2);
+
+        when(todoRepositoryMock.findAllTodos()).thenReturn(mockTodoList);
+        List<Todo> results = todoService.findAllTodos();
+
+        assertNotNull(results);
+        assertFalse(results.isEmpty());
+        assertEquals(2, results.size());
+    }
+
+    @Test
+    void findAllTodos_EmptyTodoList() {
+        when(todoRepositoryMock.findAllTodos()).thenReturn(Collections.emptyList());
+        List<Todo> results = todoService.findAllTodos();
+
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void saveTodo_ValidTodoWithSteps() {
+        List<Step> steps = new ArrayList<>();
+        Step mockStep1 = new Step(1L, "Step1", "Desc1");
+        Step mockStep2 = new Step(1L, "Step2", "Desc2");
+        steps.add(mockStep1);
+        steps.add(mockStep2);
+        Todo validTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
+
+        when(todoRepositoryMock.saveTodo(any(Todo.class))).thenReturn(validTodo);
+        Todo result = todoService.saveTodo(validTodo);
+
+        verify(todoRepositoryMock).saveTodo(validTodo);
+
+        assertNotNull(result);
+        assertEquals("Todo1", validTodo.name());
+        assertEquals("Description1", validTodo.description());
+        assertEquals(Priority.LOW, validTodo.priority());
+        assertEquals(2,validTodo.steps().size());
+        assertEquals("Step1", validTodo.steps().get(0).name());
+        assertEquals("Desc1", validTodo.steps().get(0).description());
+        assertEquals("Step2", validTodo.steps().get(1).name());
+        assertEquals("Desc2", validTodo.steps().get(1).description());
+    }
+
+    @Test
+    void saveTodo_ValidTodoWithoutSteps() {
+        List<Step> steps = new ArrayList<>();
+
+        Todo validTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
+
+        when(todoRepositoryMock.saveTodo(any(Todo.class))).thenReturn(validTodo);
+        Todo result = todoService.saveTodo(validTodo);
+
+        verify(todoRepositoryMock).saveTodo(validTodo);
+
+        assertNotNull(result);
+        assertEquals("Todo1", validTodo.name());
+        assertEquals("Description1", validTodo.description());
+        assertEquals(Priority.LOW, validTodo.priority());
+        assertEquals(0,validTodo.steps().size());
+    }
+
+    @Test
+    void saveTodo_InvalidTodo() {
+        List<Step> steps = new ArrayList<>();
+        Todo invalidTodo = new Todo(1L, "A".repeat(101), "Description1", Priority.LOW, steps);
+
+        assertThrows(ValidationException.class, () -> todoService.saveTodo(invalidTodo));
+        verify(todoRepositoryMock, never()).saveTodo(any());
+    }
+
+    @Test
+    void updateTodo_ValidTodo() {
+
     }
 }
