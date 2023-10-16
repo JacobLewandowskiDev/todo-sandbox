@@ -1,0 +1,9 @@
+FROM openjdk:17-jdk-slim
+WORKDIR /todoApp
+COPY target/todo-app.jar todo-app.jar
+EXPOSE 8080
+ENV DATABASE_URL=$JDBC_URL
+ENV DATABASE_USERNAME=$JDBC_USERNAME
+ENV DATABASE_PASSWORD=$JDBC_PASSWORD
+
+ENTRYPOINT ["java", "-jar", "todo-app.jar"]
