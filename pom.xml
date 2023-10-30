@@ -12,12 +12,14 @@
     <artifactId>todoSandbox</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>todoSandbox</name>
-    <description>Todo fullstack application</description>
+    <description>Todo application</description>
     <properties>
         <java.version>17</java.version>
         <testcontainers.version>1.17.6</testcontainers.version>
         <jooq.version>3.18.0</jooq.version>
         <mockito.version>5.5.0</mockito.version>
+        <jdbc.version>6.0.13</jdbc.version>
+        <surfire.plugin.version>3.2.1</surfire.plugin.version>
     </properties>
 
     <profiles>
@@ -44,6 +46,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${jdbc.version}</version>
         </dependency>
 
         <dependency>
@@ -97,7 +105,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-
 
             <plugin>
                 <groupId>org.jooq</groupId>

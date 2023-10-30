@@ -24,6 +24,7 @@ public class TodoController {
 
     @GetMapping
     public ResponseEntity<List<Todo>> getAllTodos() {
+        System.out.println(new ResponseEntity<List<Todo>>(todoService.findAllTodos(), HttpStatus.OK));
         return new ResponseEntity<List<Todo>>(todoService.findAllTodos(), HttpStatus.OK);
     }
 
