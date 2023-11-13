@@ -1,0 +1,9 @@
+spring:
+  application:
+    name:
+      todo-sandbox
+    datasource:
+      url: "${env.JDBC_URL}"
+      username: "${env.JDBC_USERNAME}"
+      password: "${env.JDBC_PASSWORD}"
+

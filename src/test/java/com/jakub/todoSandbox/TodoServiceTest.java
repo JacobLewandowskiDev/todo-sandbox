@@ -1,4 +1,4 @@
-package com.jakub.sandbox;
+package com.jakub.todoSandbox;
 
 import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;

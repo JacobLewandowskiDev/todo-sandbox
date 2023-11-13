@@ -122,6 +122,7 @@
                 </executions>
 
                 <configuration>
+
                     <jdbc>
                         <driver>${jdbc.driver}</driver>
                         <url>${jdbc.url}</url>
