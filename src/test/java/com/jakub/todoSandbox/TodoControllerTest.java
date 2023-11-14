@@ -4,6 +4,7 @@ import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.support.IntegrationTest;
+import com.jakub.todoSandbox.support.TestHttpResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -23,11 +24,7 @@ public class TodoControllerTest extends IntegrationTest {
         var createValidTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
 
         //When
-        var createTodoResponse = testHttpClient.request()
-                .path("todos")
-                .POST()
-                .body(createValidTodo)
-                .execute();
+        var createTodoResponse = postResponse("todos", createValidTodo);
 
         //Assert
         Assertions.assertEquals(createTodoResponse.statusCode(), 201);
@@ -38,5 +35,13 @@ public class TodoControllerTest extends IntegrationTest {
         assertEquals("Description1", saveTodoResponseBody.description());
         assertEquals(Priority.LOW, saveTodoResponseBody.priority());
         assertEquals(0, saveTodoResponseBody.steps().size());
+    }
+
+    private TestHttpResponse postResponse(String urlPath, Object body) {
+        return testHttpClient.request()
+                .path(urlPath)
+                .POST()
+                .body(body)
+                .execute();
     }
 }
