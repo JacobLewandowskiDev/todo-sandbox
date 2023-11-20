@@ -4,7 +4,6 @@ import com.jakub.todoSandbox.model.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -38,7 +37,7 @@ public abstract class IntegrationTest {
 
     @AfterEach
     void afterEach() {
-        jdbcTemplate.update("DELETE FROM step");
+        jdbcTemplate.execute("TRUNCATE TABLE step RESTART IDENTITY CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE todo RESTART IDENTITY CASCADE");
     }
 

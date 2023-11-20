@@ -4,6 +4,7 @@ import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.model.ValidationException;
 import com.jakub.todoSandbox.repository.TodoRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -65,14 +66,14 @@ public class TodoService {
     public void updateStep(long todoId, Step updatedStep) {
         System.out.println("updateStep() method called with todoId: " + todoId);
         Todo todoToBeUpdated = findTodoById(todoId)
-                .orElseThrow(() -> new ValidationException("No Todo has been found for todoId: {" + todoId + "}"));
+                .orElseThrow(() -> new ValidationException("Error status code: " + HttpStatus.BAD_REQUEST + "\nError message: No Todo has been found for todoId: {" + todoId + "}."));
 
         if (todoToBeUpdated.steps().stream().anyMatch(step -> Objects.equals(step.id(), updatedStep.id()))) {
             validateNameAndDesc(updatedStep.name(), updatedStep.description());
             todoRepository.updateStep(todoId, updatedStep);
 
         } else {
-            throw new ValidationException("The step to update was not found in the todo with todoId: {" + todoId + "}");
+            throw new ValidationException("Error status code: " + HttpStatus.BAD_REQUEST + "\nError message: The step to update was not found in the todo with todoId: {" + todoId + "}.");
         }
     }
 
@@ -83,20 +84,20 @@ public class TodoService {
 
     public void validateNameAndDesc(String name, String description) {
         if (name == null || name.isBlank() || name.length() > 100 || !name.matches("^[a-zA-Z0-9 ]+$")) {
-            throw new ValidationException("Name is null, blank, has non-alphanumeric characters, " +
-                    "or the name has exceeded the number of characters");
+            throw new ValidationException("Error status code: " + HttpStatus.BAD_REQUEST + "\nError message: Name is null, blank, has non-alphanumeric characters, " +
+                    "or the name has exceeded the number of characters.");
         }
         if (description.length() >= 3000) {
-            throw new ValidationException("The description has exceeded the number of characters");
+            throw new ValidationException("Error status code: " + HttpStatus.BAD_REQUEST + "\nError message: The description has exceeded the number of characters.");
         }
     }
 
     public void canAddStepsToTodo(long id, List<Step> steps) {
         Todo todo = todoRepository.findTodoById(id)
-                .orElseThrow((() -> new ValidationException("No Todo exists for the provided todoId: {" + id + "}.")));
+                .orElseThrow((() -> new ValidationException("Error status code: " + HttpStatus.BAD_REQUEST + "\nError message: No Todo exists for the provided todoId: {" + id + "}.")));
 
         if (todo.steps().size() + steps.size() > MAX_NUM_STEPS) {
-            throw new ValidationException("Error: Todo has reached its maximum number of steps (10).");
+            throw new ValidationException("Error status code: " + HttpStatus.BAD_REQUEST + "\nError message: Todo has reached its maximum number of steps (" + MAX_NUM_STEPS + ").");
         }
     }
 
