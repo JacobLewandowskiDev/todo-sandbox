@@ -94,6 +94,10 @@ public class TestHttpClient {
             return method("PUT");
         }
 
+        public RequestBuilder DELETE() {
+            return method("DELETE");
+        }
+
         public RequestBuilder header(String key, String value) {
             headers.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
             return this;

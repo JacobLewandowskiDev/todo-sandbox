@@ -7,8 +7,10 @@ import com.jakub.todoSandbox.support.IntegrationTest;
 import com.jakub.todoSandbox.support.TestHttpResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,39 +72,98 @@ public class TodoControllerTest extends IntegrationTest {
     @Test
     void findAllTodos_ValidTodoList() throws IOException {
         //Given
-        List<Todo> testTodoList = new ArrayList<Todo>();
-        Todo todo1 = new Todo(1L, "Todo1", "Description1", Priority.LOW, new ArrayList<>());
-        Todo todo2 = new Todo(2L, "Todo2", "Description2", Priority.HIGH, new ArrayList<>());
-
-        var response = postResponse("todos/", todo1);
+        var todo1 = new Todo(1L, "Todo1", "Description1", Priority.LOW, new ArrayList<>());
+        var todo2 = new Todo(2L, "Todo2", "Description2", Priority.HIGH, new ArrayList<>());
+        var todo1PostResponse = postResponse("todos", todo1);
+        var todo2PostResponse = postResponse("todos", todo2);
 
         //When
-        List<Todo> responseList = new ArrayList<>();
-        var getTodosResponse = getResponse();
-        var todoResponseBody = getTodosResponse.objectMapper().readValue(getTodosResponse.body(), Todo.class);
-        System.out.println(todoResponseBody);
+        var responseBody = Arrays.asList(getResponse().objectMapper().readValue(getResponse().body(), Todo[].class));
 
         //Assert
-        assertNotNull(todoResponseBody);
-//        assertFalse(todoResponseBody.isEmpty());
-//        assertEquals(2, getTodosResponse.body().length);
+        assertNotNull(responseBody);
+        assertFalse(responseBody.isEmpty());
+        assertEquals(2, responseBody.size());
+        assertEquals(HttpStatus.OK.value() , getResponse().statusCode());
     }
 
+    @Test
+    void findAllTodos_EmptyTodoList() throws IOException {
+        //Given nothing (empty list)
 
+        //When
+        var responseBody = Arrays.asList(getResponse().objectMapper().readValue(getResponse().body(), Todo[].class));
 
+        //Assert
+        assertNotNull(responseBody);
+        assertTrue(responseBody.isEmpty());
+        assertEquals(0, responseBody.size());
+        assertEquals(HttpStatus.OK.value() , getResponse().statusCode());
+    }
 
+    @Test
+    void findTodoById_ValidTodoId() throws IOException {
+        //Given
+        long todoId = 1L;
+        var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
+        var postTodo = postResponse("todos", validTodo);
 
+        //When
+        var getTodoByIdResponse = getByIdResponse(todoId);
+        var responseBody = getTodoByIdResponse.objectMapper().readValue(getTodoByIdResponse.body(), Todo.class);
+        System.out.println(responseBody);
 
+        //Assert
+        assertNotNull(responseBody);
+        assertEquals(1L, responseBody.id());
+        assertEquals("Todo", responseBody.name());
+        assertEquals("Description", responseBody.description());
+        assertEquals(Priority.HIGH, responseBody.priority());
+        assertNotNull(responseBody.steps());
+        assertEquals(0, responseBody.steps().size());
+        assertEquals(HttpStatus.OK.value() ,getTodoByIdResponse.statusCode());
+    }
+
+    @Test
+    void findTodoById_InvalidTodoId() throws IOException {
+        //Given
+        long todoId = 1L;
+        var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
+        var postTodo = postResponse("todos", validTodo);
+
+        //When
+        var getTodoByIdResponse = getByIdResponse(2L);
+        var responseBody = getTodoByIdResponse.objectMapper().readValue(getTodoByIdResponse.body(), Todo.class);
+        System.out.println(responseBody);
+
+        //Assert
+        assertNull(responseBody);
+        assertEquals(HttpStatus.OK.value() ,getTodoByIdResponse.statusCode());
+    }
+
+    @Test
+    void deleteTodo() {
+        //Given
+        long todoId = 1L;
+        var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
+        var postTodo = postResponse("todos", validTodo);
+
+        //When
+        var deleteTodoResponse = deleteResponse(todoId);
+
+        //Assert
+        assertEquals(HttpStatus.OK.value(), deleteTodoResponse.statusCode());
+    }
 
 
     private TestHttpResponse getResponse() {
         return testHttpClient.request()
-                .path("todos/")
+                .path("/todos")
                 .GET()
                 .execute();
     }
 
-    private TestHttpResponse getByIdResponse(String todoId) {
+    private TestHttpResponse getByIdResponse(long todoId) {
         return testHttpClient.request()
                 .path("todos/" + todoId)
                 .GET()
@@ -122,6 +183,13 @@ public class TodoControllerTest extends IntegrationTest {
                 .path("todos/" + id)
                 .PUT()
                 .body(request)
+                .execute();
+    }
+
+    private TestHttpResponse deleteResponse(long id) {
+        return testHttpClient.request()
+                .path("todos/" + id)
+                .DELETE()
                 .execute();
     }
 }
