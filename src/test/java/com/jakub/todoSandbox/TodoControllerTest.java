@@ -5,6 +5,7 @@ import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.support.IntegrationTest;
 import com.jakub.todoSandbox.support.TestHttpResponse;
+import org.apache.tomcat.util.buf.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -12,8 +13,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 
 public class TodoControllerTest extends IntegrationTest {
 
@@ -104,7 +107,7 @@ public class TodoControllerTest extends IntegrationTest {
     @Test
     void findTodoById_ValidTodoId() throws IOException {
         //Given
-        long todoId = 1L;
+        var todoId = 1L;
         var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
         var postTodo = postResponse("todos", validTodo);
 
@@ -127,7 +130,7 @@ public class TodoControllerTest extends IntegrationTest {
     @Test
     void findTodoById_InvalidTodoId() throws IOException {
         //Given
-        long todoId = 1L;
+        var todoId = 1L;
         var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
         var postTodo = postResponse("todos", validTodo);
 
@@ -142,9 +145,50 @@ public class TodoControllerTest extends IntegrationTest {
     }
 
     @Test
+    void updateTodo_ValidTodo() throws IOException{
+        //Given
+        var todoId = 1L;
+        var savedTodo = new Todo(todoId, "Valid Todo", "Description", Priority.LOW, new ArrayList<>());
+        var updatedTodo = new Todo(0, "New Todo name", "New Description", Priority.HIGH, new ArrayList<>());
+
+        //When
+        var postTodoResponse = postResponse("todos", savedTodo);
+        var updateResponse = updateResponse(todoId, updatedTodo);
+        var getResponse = getByIdResponse(todoId);
+        var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
+        System.out.println(responseBody);
+
+        //Assert
+        assertResponseStatus(postTodoResponse, HttpStatus.CREATED);
+        assertResponseStatus(updateResponse, HttpStatus.OK);
+        assertEquals("New Todo name", responseBody.name());
+        assertEquals("New Description", responseBody.description());
+        assertEquals(Priority.HIGH, responseBody.priority());
+        assertEquals(0, responseBody.steps().size());
+    }
+
+    @Test
+    void updateTodo_InvalidTodo() throws IOException{
+        //Given
+        var todoId = 1L;
+        var updatedTodo = new Todo(0, "New Todo name", "New Description", Priority.HIGH, new ArrayList<>());
+
+        //When
+        var updateResponse = updateResponse(todoId, updatedTodo);
+        var getResponse = getByIdResponse(todoId);
+        var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
+        System.out.println(responseBody);
+
+        //Assert
+        assertResponseStatus(updateResponse, HttpStatus.BAD_REQUEST);
+        assertNull(responseBody);
+    }
+
+
+    @Test
     void deleteTodo() {
         //Given
-        long todoId = 1L;
+        var todoId = 1L;
         var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, new ArrayList<>());
         var postTodo = postResponse("todos", validTodo);
 
@@ -154,6 +198,153 @@ public class TodoControllerTest extends IntegrationTest {
         //Assert
         assertEquals(HttpStatus.OK.value(), deleteTodoResponse.statusCode());
     }
+
+    @Test
+    void saveSteps_ValidSteps() throws IOException{
+        //Given
+        var todoId = 1L;
+        List<Step> steps = new ArrayList<>();
+        var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, steps);
+        var postResponse = postResponse("todos", validTodo);
+
+        var step = new Step(0L, "Step", "Step Description");
+        steps.add(step);
+
+        //When
+        var statusCode = 201;
+        while (statusCode == HttpStatus.CREATED.value()) {
+            var postStepResponse = postStepResponse(todoId, steps);
+            statusCode = postStepResponse.statusCode();
+        }
+
+        var getResponse = getByIdResponse(1L);
+        var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
+        System.out.println("The Todos step list size is: " + responseBody.steps().size());
+
+        //Assert
+        assertResponseStatus(getResponse, HttpStatus.OK);
+        assertNotNull(getResponse.body());
+        assertNotNull(responseBody.steps());
+        assertEquals(10, responseBody.steps().size());
+    }
+
+    @Test
+    void saveSteps_InvalidSteps() throws IOException {
+        //Given
+        var todoId = 1L;
+        List<Step> steps = new ArrayList<>();
+        var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, steps);
+        var postResponse = postResponse("todos", validTodo);
+
+        var step = new Step(1L, "Invalid_StepName!@", "Description");
+        steps.add(step);
+
+        //When
+        var postStepResponse = postStepResponse(todoId, steps);
+        var getResponse = getByIdResponse(1L);
+        var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
+        System.out.println("The Todos step list size is: " + responseBody.steps().size());
+
+        //Assert
+        assertResponseStatus(postStepResponse, HttpStatus.BAD_REQUEST);
+        assertNotNull(responseBody);
+        assertEquals(0, responseBody.steps().size());
+    }
+
+    @Test
+    void updateStep_ValidStep() throws IOException {
+        //Given
+        var todoId = 1L;
+        List<Step> steps = new ArrayList<>();
+        var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, steps);
+        var postResponse = postResponse("todos", validTodo);
+
+        var stepId = 1L;
+        var oldStep = new Step(stepId, "Old Step name", "Old step description");
+        steps.add(oldStep);
+
+        var newStep = new Step(stepId, "Updated Step name", "Updated step description");
+
+        //When
+        var postStepResponse = postStepResponse(todoId, steps);
+        var updateStepResponse = updateStepResponse(todoId, newStep);
+        var getResponse = getByIdResponse(todoId);
+        var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
+
+        //Assert
+        assertResponseStatus(updateStepResponse, HttpStatus.OK);
+        assertNotNull(responseBody);
+        assertEquals("Updated Step name", responseBody.steps().get(0).name());
+        assertEquals("Updated step description", responseBody.steps().get(0).description());
+        assertEquals(1, responseBody.steps().size());
+    }
+
+    @Test
+    void updateStep_TodoNotFound() throws IOException {
+        //Given
+        var todoId = 1L;
+        var newStep = new Step(1L, "Updated Step name", "Updated step description");
+
+        //When
+        var updateResponse = updateStepResponse(todoId, newStep);
+        var getResponse = getByIdResponse(todoId);
+        var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
+
+        //Assert
+        assertResponseStatus(updateResponse, HttpStatus.BAD_REQUEST);
+        assertNull(responseBody);
+    }
+
+    @Test
+    void updateStep_StepNotFound() throws IOException {
+        //Given
+        var todoId = 1L;
+        List<Step> steps = new ArrayList<>();
+        var validTodo = new Todo(todoId, "Todo", "Description", Priority.HIGH, steps);
+        var postResponse = postResponse("todos", validTodo);
+
+        var stepId = 1L;
+        var oldStep = new Step(stepId, "Old Step name", "Old step description");
+        steps.add(oldStep);
+
+        var newStep = new Step(2L, "Updated Step name", "Updated step description");
+
+        //When
+        var postStepResponse = postStepResponse(todoId, steps);
+        var updateStepResponse = updateStepResponse(todoId, newStep);
+        var getResponse = getByIdResponse(todoId);
+        var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
+
+        //Assert
+        assertResponseStatus(updateStepResponse, HttpStatus.BAD_REQUEST);
+        assertNotNull(responseBody);
+        assertEquals("Old Step name", responseBody.steps().get(0).name());
+        assertEquals("Old step description", responseBody.steps().get(0).description());
+        assertEquals(1, responseBody.steps().size());
+    }
+
+    @Test
+    void deleteSteps() throws IOException{
+        //Given
+        long todoId = 1L;
+        List<Long> stepIdsForDeletion = List.of(1L, 2L);
+        var validTodo = new Todo(
+                todoId, "Todo", "Description", Priority.HIGH,
+                List.of(new Step(1L, "Name 1", "Description"), new Step(2L, "Name 2", "Description"))
+        );
+
+        var postResponse = postResponse("todos", validTodo);
+
+        //When
+        var deleteResponse = deleteStepResponse(todoId, stepIdsForDeletion);
+        var getByIdResponse = getByIdResponse(todoId);
+        var responseBody = getByIdResponse.objectMapper().readValue(getByIdResponse.body(), Todo.class);
+
+        //Assert
+        assertResponseStatus(deleteResponse, HttpStatus.OK);
+        assertEquals(0, responseBody.steps().size());
+    }
+
 
 
     private TestHttpResponse getResponse() {
@@ -178,17 +369,44 @@ public class TodoControllerTest extends IntegrationTest {
                 .execute();
     }
 
-    private TestHttpResponse updateResponse(long id, Object request) {
+    private TestHttpResponse updateResponse(long todoId, Object request) {
         return testHttpClient.request()
-                .path("todos/" + id)
+                .path("todos/" + todoId)
                 .PUT()
                 .body(request)
                 .execute();
     }
 
-    private TestHttpResponse deleteResponse(long id) {
+    private TestHttpResponse deleteResponse(long todoId) {
         return testHttpClient.request()
-                .path("todos/" + id)
+                .path("todos/" + todoId)
+                .DELETE()
+                .execute();
+    }
+
+    private TestHttpResponse postStepResponse(long todoId, List<Step> request) {
+        return testHttpClient.request()
+                .path("todos/" + todoId + "/steps")
+                .POST()
+                .body(request)
+                .execute();
+    }
+
+    private TestHttpResponse updateStepResponse(long todoId, Object request) {
+        return testHttpClient.request()
+                .path("todos/" + todoId + "/steps")
+                .PUT()
+                .body(request)
+                .execute();
+    }
+
+    private TestHttpResponse deleteStepResponse(long todoId, List<Long> stepId) {
+        String id = stepId.stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(","));
+
+        return testHttpClient.request()
+                .path("todos/" + todoId + "/steps?stepId=" + id)
                 .DELETE()
                 .execute();
     }
