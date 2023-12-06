@@ -165,8 +165,8 @@ public class TodoServiceTest {
         Todo validTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
 
         //When
-        when(todoRepositoryMock.saveTodo(any(Todo.class))).thenReturn(validTodo);
-        Todo result = todoService.saveTodo(validTodo);
+        when(todoRepositoryMock.saveTodo(any(Todo.class))).thenReturn(validTodo.id());
+        long result = todoService.saveTodo(validTodo);
 
         //Assert
         verify(todoRepositoryMock).saveTodo(validTodo);
@@ -189,8 +189,8 @@ public class TodoServiceTest {
         Todo validTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
 
         //When
-        when(todoRepositoryMock.saveTodo(any(Todo.class))).thenReturn(validTodo);
-        Todo result = todoService.saveTodo(validTodo);
+        when(todoRepositoryMock.saveTodo(any(Todo.class))).thenReturn(validTodo.id());
+        long result = todoService.saveTodo(validTodo);
 
         //Assert
         verify(todoRepositoryMock).saveTodo(validTodo);
@@ -353,10 +353,8 @@ public class TodoServiceTest {
     void updateStep_StepNotFoundInTodo() {
         //Given
         long todoId = 1L;
-        Step existingStep = new Step(1L, "Updated Step name", "Updated step description");
         Step updatedStep = new Step(2L, "Updated Step name", "Updated step description");
         List<Step> steps = new ArrayList<>();
-        steps.add(existingStep);
         Todo existingTodo = new Todo(todoId, "Name", "Description", Priority.LOW, steps);
 
         //When

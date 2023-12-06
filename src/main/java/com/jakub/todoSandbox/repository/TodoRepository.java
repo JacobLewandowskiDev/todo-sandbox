@@ -12,7 +12,7 @@ public interface TodoRepository {
     // TodoMethods
     Optional<Todo> findTodoById(long todoId);
     List<Todo> findAllTodos();
-    Todo saveTodo(Todo todo);
+    long saveTodo(Todo todo);
     Optional<Todo> deleteTodo(long todoId);
     void updateTodo(long todoId, Todo todo);
 

@@ -35,7 +35,7 @@ public class TodoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Todo saveTodo(@RequestBody Todo todo) {
+    public long saveTodo(@RequestBody Todo todo) {
         return todoService.saveTodo(todo);
     }
 

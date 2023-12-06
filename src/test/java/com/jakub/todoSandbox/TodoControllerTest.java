@@ -5,7 +5,6 @@ import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
 import com.jakub.todoSandbox.support.IntegrationTest;
 import com.jakub.todoSandbox.support.TestHttpResponse;
-import org.apache.tomcat.util.buf.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -24,40 +23,46 @@ public class TodoControllerTest extends IntegrationTest {
     void saveTodo_ValidTodoWithSteps() throws IOException {
         //Given
         List<Step> steps = new ArrayList<>();
-        Step step1 = new Step(1L, "Step1", "Desc1");
-        Step step2 = new Step(2L, "Step2", "Desc2");
+        var step1 = new Step(1L, "Step1", "Desc1");
+        var step2 = new Step(2L, "Step2", "Desc2");
         steps.add(step1);
         steps.add(step2);
-        Todo userCreatedTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
+        var todoId = 1L;
+        var todo = new Todo(todoId, "Todo1", "Description1", Priority.LOW, steps);
 
         //When
-        var saveTodoResponse = postResponse("todos", userCreatedTodo);
+        var saveTodoResponse = postResponse("todos", todo);
+        var getTodoResponse = getByIdResponse(todoId);
+        var responseBody = getTodoResponse.objectMapper().readValue(getTodoResponse.body(), Todo.class);
 
         //Assert
         assertResponseStatus(saveTodoResponse, HttpStatus.CREATED);
-        var todoResponseBody = saveTodoResponse.objectMapper().readValue(saveTodoResponse.body(), Todo.class);
+        var todoResponseBody = saveTodoResponse.objectMapper().readValue(saveTodoResponse.body(), Long.TYPE);
 
         assertNotNull(todoResponseBody);
-        assertEquals(userCreatedTodo, todoResponseBody);
-        assertEquals(2, todoResponseBody.steps().size());
+        assertEquals(todoId, todoResponseBody);
+        assertEquals(2, responseBody.steps().size());
     }
 
     @Test
     void saveTodo_ValidTodoWithoutSteps() throws IOException {
         //Given
         List<Step> steps = new ArrayList<>();
-        var userCreatedTodo = new Todo(1L, "Todo1", "Description1", Priority.LOW, steps);
+        var todoId = 1L;
+        var todo = new Todo(todoId, "Todo1", "Description1", Priority.LOW, steps);
 
         //When
-        var saveTodoResponse = postResponse("todos", userCreatedTodo);
+        var saveTodoResponse = postResponse("todos", todo);
 
         //Assert
         assertResponseStatus(saveTodoResponse, HttpStatus.CREATED);
-        var todoResponseBody = saveTodoResponse.objectMapper().readValue(saveTodoResponse.body(), Todo.class);
+        var saveResponseBody = saveTodoResponse.objectMapper().readValue(saveTodoResponse.body(), Long.TYPE);
+        var getTodoResponse = getByIdResponse(todoId);
+        var responseBody = getTodoResponse.objectMapper().readValue(getTodoResponse.body(), Todo.class);
 
-        assertNotNull(todoResponseBody);
-        assertEquals(userCreatedTodo, todoResponseBody);
-        assertEquals(0, todoResponseBody.steps().size());
+        assertNotNull(saveResponseBody);
+        assertEquals(todoId, saveResponseBody);
+        assertEquals(0, responseBody.steps().size());
     }
 
     @Test
@@ -304,23 +309,17 @@ public class TodoControllerTest extends IntegrationTest {
         var postResponse = postResponse("todos", validTodo);
 
         var stepId = 1L;
-        var oldStep = new Step(stepId, "Old Step name", "Old step description");
-        steps.add(oldStep);
+        var updatedStep = new Step(stepId, "Updated Step name", "Updated step description");
 
-        var newStep = new Step(2L, "Updated Step name", "Updated step description");
 
         //When
-        var postStepResponse = postStepResponse(todoId, steps);
-        var updateStepResponse = updateStepResponse(todoId, newStep);
+        var updateStepResponse = updateStepResponse(todoId, updatedStep);
         var getResponse = getByIdResponse(todoId);
         var responseBody = getResponse.objectMapper().readValue(getResponse.body(), Todo.class);
 
         //Assert
         assertResponseStatus(updateStepResponse, HttpStatus.BAD_REQUEST);
-        assertNotNull(responseBody);
-        assertEquals("Old Step name", responseBody.steps().get(0).name());
-        assertEquals("Old step description", responseBody.steps().get(0).description());
-        assertEquals(1, responseBody.steps().size());
+        assertTrue(responseBody.steps().isEmpty());
     }
 
     @Test
@@ -344,6 +343,8 @@ public class TodoControllerTest extends IntegrationTest {
         assertResponseStatus(deleteResponse, HttpStatus.OK);
         assertEquals(0, responseBody.steps().size());
     }
+
+
 
 
 

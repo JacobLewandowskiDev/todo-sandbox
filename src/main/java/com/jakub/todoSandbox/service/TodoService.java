@@ -30,7 +30,8 @@ public class TodoService {
         return todoRepository.findAllTodos();
     }
 
-    public Todo saveTodo(Todo todo) {
+    public long saveTodo(Todo todo) {
+        System.out.println("saveTodo() method call");
         validateNameAndDesc(todo.name(), todo.description());
         if (!todo.steps().isEmpty()) {
             for (Step step : todo.steps()) {

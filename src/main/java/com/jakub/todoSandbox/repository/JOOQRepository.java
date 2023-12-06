@@ -74,7 +74,7 @@ public class JOOQRepository implements TodoRepository {
 
     @Transactional
     @Override
-    public Todo saveTodo(Todo todo) {
+    public long saveTodo(Todo todo) {
         TodoRecord todoRecord = context.insertInto(TODO)
                 .set(TODO.NAME, todo.name())
                 .set(TODO.DESCRIPTION, todo.description())
@@ -99,12 +99,7 @@ public class JOOQRepository implements TodoRepository {
                         stepRecord.getDescription()))
                 .stream().toList();
 
-        return Todo.builder(todoRecord.getName())
-                .id(todoRecord.getId())
-                .description(todoRecord.getDescription())
-                .priority(Priority.valueOf(todoRecord.getPriority().name()))
-                .steps(savedSteps)
-                .build();
+        return todoRecord.getId();
     }
 
     @Transactional
