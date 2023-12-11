@@ -8,9 +8,9 @@ services:
       postgres_con:
         condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=${env.JDBC_URL}
-      - SPRING_DATASOURCE_USERNAME=${env.JDBC_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${env.JDBC_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_con:5432/demoDB
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=1234
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
   postgres_con:
@@ -22,7 +22,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=demoDB
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
