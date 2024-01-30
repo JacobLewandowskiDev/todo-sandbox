@@ -3,6 +3,9 @@ package com.jakub.todoSandbox;
 import com.jakub.todoSandbox.model.Priority;
 import com.jakub.todoSandbox.model.Step;
 import com.jakub.todoSandbox.model.Todo;
+import com.jakub.todoSandbox.model.ValidationException;
+import com.jakub.todoSandbox.repository.TodoRepository;
+import com.jakub.todoSandbox.service.TodoService;
 import com.jakub.todoSandbox.support.IntegrationTest;
 import com.jakub.todoSandbox.support.TestHttpResponse;
 import org.junit.jupiter.api.Test;
@@ -15,9 +18,44 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 
 public class TodoControllerTest extends IntegrationTest {
+
+    private final TodoRepository todoRepositoryMock = mock(TodoRepository.class);
+    private final TodoService todoService = new TodoService(todoRepositoryMock);
+
+    @Test
+    void validateNameAndDesc_CorrectNameAndDesc() {
+        assertDoesNotThrow(() -> todoService.validateNameAndDesc("A correct name for a todo", "This is a correct description for a todo"));
+    }
+
+    @Test
+    void validateNameAndDesc_NullName() {
+        assertThrows(ValidationException.class, () -> todoService.validateNameAndDesc(null, "This is a correct description for a todo"));
+    }
+
+    @Test
+    void validateNameAndDesc_BlankName() {
+        assertThrows(ValidationException.class, () -> todoService.validateNameAndDesc("", "This is a correct description for a todo"));
+    }
+
+    @Test
+    void validateNameAndDesc_ExceededNameLength() {
+        assertThrows(ValidationException.class, () -> todoService.validateNameAndDesc("A".repeat(101), "This is a correct description for a todo"));
+    }
+
+    @Test
+    void validateNameAndDesc_InvalidName() {
+        assertThrows(ValidationException.class, () -> todoService.validateNameAndDesc("Invalid_name!", "This is a correct description for a todo"));
+    }
+
+    @Test
+    void validateNameAndDesc_ExceededDescLength() {
+        assertThrows(ValidationException.class, () -> todoService.validateNameAndDesc("Correct Name", "A".repeat(3000)));
+    }
+
 
     @Test
     void saveTodo_ValidTodoWithSteps() throws IOException {
@@ -230,7 +268,25 @@ public class TodoControllerTest extends IntegrationTest {
         assertResponseStatus(getResponse, HttpStatus.OK);
         assertNotNull(getResponse.body());
         assertNotNull(responseBody.steps());
-        assertEquals(10, responseBody.steps().size());
+        assertEquals(10, responseBody.steps().size()); //Assert that a TODOS step list cannot exceed size of 10.
+    }
+
+    @Test
+    void saveSteps_NonExistingTodo() throws IOException {
+        //Given
+        List<Step> steps = new ArrayList<>();
+        var step = new Step(0L, "Step", "Step Description");
+        steps.add(step);
+
+        //When
+        var postStepResponse = postStepResponse(1L, steps);
+        var responseBody = postStepResponse.objectMapper().readValue(postStepResponse.body(), Todo.class);
+
+        //Assert
+        assertResponseStatus(postStepResponse, HttpStatus.BAD_REQUEST);
+        assertEquals(0, responseBody.id());
+        assertNull(responseBody.name());
+        assertNull(responseBody.steps());
     }
 
     @Test
@@ -343,7 +399,6 @@ public class TodoControllerTest extends IntegrationTest {
         assertResponseStatus(deleteResponse, HttpStatus.OK);
         assertEquals(0, responseBody.steps().size());
     }
-
 
 
 

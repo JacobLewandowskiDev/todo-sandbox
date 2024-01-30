@@ -4,17 +4,21 @@
 package com.jakub.todoSandbox.jooq.tables;
 
 
+import com.jakub.todoSandbox.jooq.Indexes;
 import com.jakub.todoSandbox.jooq.Keys;
 import com.jakub.todoSandbox.jooq.Public;
 import com.jakub.todoSandbox.jooq.enums.PriorityEnum;
 import com.jakub.todoSandbox.jooq.tables.records.TodoRecord;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Function4;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Records;
@@ -59,7 +63,7 @@ public class Todo extends TableImpl<TodoRecord> {
     /**
      * The column <code>public.todo.name</code>.
      */
-    public final TableField<TodoRecord, String> NAME = createField(DSL.name("name"), SQLDataType.VARCHAR(255), this, "");
+    public final TableField<TodoRecord, String> NAME = createField(DSL.name("name"), SQLDataType.VARCHAR(255).nullable(false), this, "");
 
     /**
      * The column <code>public.todo.description</code>.
@@ -69,7 +73,7 @@ public class Todo extends TableImpl<TodoRecord> {
     /**
      * The column <code>public.todo.priority</code>.
      */
-    public final TableField<TodoRecord, PriorityEnum> PRIORITY = createField(DSL.name("priority"), SQLDataType.VARCHAR.asEnumDataType(com.jakub.todoSandbox.jooq.enums.PriorityEnum.class), this, "");
+    public final TableField<TodoRecord, PriorityEnum> PRIORITY = createField(DSL.name("priority"), SQLDataType.VARCHAR.nullable(false).asEnumDataType(com.jakub.todoSandbox.jooq.enums.PriorityEnum.class), this, "");
 
     private Todo(Name alias, Table<TodoRecord> aliased) {
         this(alias, aliased, null);
@@ -107,6 +111,11 @@ public class Todo extends TableImpl<TodoRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_TODO_NAME);
     }
 
     @Override

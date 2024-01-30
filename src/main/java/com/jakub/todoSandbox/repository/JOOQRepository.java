@@ -71,7 +71,6 @@ public class JOOQRepository implements TodoRepository {
                 .collect(Collectors.toList());
     }
 
-
     @Transactional
     @Override
     public long saveTodo(Todo todo) {
@@ -82,13 +81,11 @@ public class JOOQRepository implements TodoRepository {
                 .returning()
                 .fetchOne();
 
-        if (todoRecord != null) {
-            todo.steps().forEach(step -> context.insertInto(STEP)
-                    .set(STEP.NAME, step.name())
-                    .set(STEP.DESCRIPTION, step.description())
-                    .set(STEP.TODO_ID, todoRecord.getId())
-                    .execute());
-        }
+        todo.steps().forEach(step -> context.insertInto(STEP)
+                .set(STEP.NAME, step.name())
+                .set(STEP.DESCRIPTION, step.description())
+                .set(STEP.TODO_ID, todoRecord.getId())
+                .execute());
 
         List<Step> savedSteps = context.selectFrom(STEP)
                 .where(STEP.TODO_ID.eq(todoRecord.getId()))
@@ -160,11 +157,9 @@ public class JOOQRepository implements TodoRepository {
 
     @Override
     public void deleteSteps(long todoId, List<Long> stepIds) {
-        for (long stepId : stepIds) {
-            context.deleteFrom(STEP)
-                    .where(STEP.ID.eq(stepId))
-                    .and(STEP.TODO_ID.eq(todoId))
-                    .execute();
-        }
+        context.deleteFrom(STEP)
+                .where(STEP.ID.in(stepIds))
+                .and(STEP.TODO_ID.eq(todoId))
+                .execute();
     }
 }

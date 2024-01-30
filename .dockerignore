@@ -1,0 +1,27 @@
+# Ignore development and build-related files
+.idea/
+.vscode/
+target/
+build/
+out/
+node_modules/
+.gradle/
+.m2/
+
+# Ignore temporary and cache files
+*.tmp
+*.log
+.cache/
+.npm/
+.gradle/caches/
+
+# Ignore configuration files specific to local development
+.env
+application-local.properties
+application-dev.yml
+
+# Ignore source control-related files
+.git/
+.gitignore
+.svn/
+.hg/

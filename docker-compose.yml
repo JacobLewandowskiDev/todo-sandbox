@@ -1,25 +1,25 @@
 version: '3.8'
 services:
-  todo-app_con:
+  todo-app_container:
     image: 'todo-app_img'
     ports:
       - "8080:8080"
     depends_on:
-      postgres_con:
+      postgres_container:
         condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_con:5432/demoDB
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=1234
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
-  postgres_con:
+  postgres_container:
     image: postgres:15.3
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_PASSWORD=1234
-      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USERNAME}
       - POSTGRES_DB=demoDB
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]

@@ -34,9 +34,9 @@ public class TodoController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public long saveTodo(@RequestBody Todo todo) {
-        return todoService.saveTodo(todo);
+    @ResponseBody
+    public ResponseEntity<Long> saveTodo(@RequestBody Todo todo) {
+        return new ResponseEntity<Long>(todoService.saveTodo(todo), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")

@@ -4,6 +4,7 @@
 package com.jakub.todoSandbox.jooq.tables;
 
 
+import com.jakub.todoSandbox.jooq.Indexes;
 import com.jakub.todoSandbox.jooq.Keys;
 import com.jakub.todoSandbox.jooq.Public;
 import com.jakub.todoSandbox.jooq.tables.records.StepRecord;
@@ -16,6 +17,7 @@ import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Function4;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Records;
@@ -108,6 +110,11 @@ public class Step extends TableImpl<StepRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_STEP_TODO_ID);
     }
 
     @Override
