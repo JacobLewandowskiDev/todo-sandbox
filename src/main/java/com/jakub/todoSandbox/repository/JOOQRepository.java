@@ -67,6 +67,7 @@ public class JOOQRepository implements TodoRepository {
                 .map(record -> Todo.builder(record.get(TODO.NAME))
                         .id(record.get(TODO.ID))
                         .priority(Priority.valueOf(record.get(TODO.PRIORITY).name()))
+                        .description((record.get(TODO.DESCRIPTION)))
                         .build())
                 .collect(Collectors.toList());
     }
