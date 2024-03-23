@@ -106,7 +106,7 @@ To run the application locally, follow these steps:
     java -jar target/<jar-file-name>.jar
     ```
 7. The Application will now run on your localhost:8080
-* To use the Frontend portion of the Application locally you must configure the CorsConfig class to use the same port as the frontend.
+    * To use the Frontend portion of the Application locally you must configure the CorsConfig class to use the same port as the frontend.
 
 ## Frontend portion of the Application
 To use the frontend portion of the application, please follow the link below to learn how to set up the app:
