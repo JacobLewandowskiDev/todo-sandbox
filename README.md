@@ -90,9 +90,15 @@ To run the application locally, follow these steps:
     * Set up your local environment variables:
           ```
             ${env.JDBC_DRIVER}
+          ```
+          ```
             ${env.JDBC_URL}
-            ${env.JDBC_USERNAME}
-            ${env.JDBC_PASSWORD}
+          ```
+          ```
+          ${env.JDBC_USERNAME}
+          ```
+          ```
+          ${env.JDBC_PASSWORD}
           ```
 3. Clone this repository.
 4. Navigate to the project directory.
