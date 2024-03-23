@@ -14,7 +14,7 @@ This project is the backend portion of a full-stack Virtual Task & Productivity 
 
 The API works with the following Todo model:
 
-    ```json
+    json
         {
             "id": Long,
             "name": String,
@@ -28,7 +28,7 @@ The API works with the following Todo model:
                 }
             ]
         }
-    ```
+    
 
 ## Validation rules
 1. Name: only alphanumeric characters, not blank, not null, max 100 characters
@@ -90,16 +90,11 @@ To run the application locally, follow these steps:
     * Set up your local environment variables:
           ```
             ${env.JDBC_DRIVER}
-          ```
-          ```
             ${env.JDBC_URL}
+            ${env.JDBC_USERNAME}
+            ${env.JDBC_PASSWORD}
           ```
-          ```
-          ${env.JDBC_USERNAME}
-          ```
-          ```
-          ${env.JDBC_PASSWORD}
-          ```
+          
 3. Clone this repository.
 4. Navigate to the project directory.
 5. Build the project using Maven with the dev profile:
