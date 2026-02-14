@@ -1,27 +1,19 @@
 version: '3.8'
+
 services:
   todo-app_container:
-    image: 'todo-app_img'
+    image: 'lewandosiu/todo-backend:latest'
+    container_name: todo-app_container
     ports:
       - "2052:8080"
-
+    networks:
+      - todo-net
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_container:5432/demoDB
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=1234
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-
-  postgres_container:
-    image: postgres:15.3
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_PASSWORD=1234
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=demoDB
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+networks:
+  todo-net:
+    external: true
